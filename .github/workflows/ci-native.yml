@@ -2,9 +2,7 @@ name: Native Linux
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Builds and tests the editor natively on x86-64 Linux.

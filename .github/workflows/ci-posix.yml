@@ -2,9 +2,7 @@ name: POSIX Cross-Compile
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Compiles the editor for every POSIX/Unix cross-target and runs the

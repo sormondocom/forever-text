@@ -2,9 +2,7 @@ name: 6502 (Commodore / Atari / Apple)
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Builds the editor for three 6502-family targets using cc65.

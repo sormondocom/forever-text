@@ -2,9 +2,7 @@ name: TRS-80
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Builds the editor for the TRS-80 Model III (Zilog Z80 CPU).

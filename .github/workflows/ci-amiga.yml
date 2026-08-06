@@ -2,9 +2,7 @@ name: Amiga 68k
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Builds the editor for the Commodore Amiga (68000 CPU, AmigaOS).

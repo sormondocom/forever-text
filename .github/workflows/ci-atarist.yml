@@ -2,9 +2,7 @@ name: Atari ST
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    branches: ["main"]
 
 # -----------------------------------------------------------------------
 # Builds the editor for the Atari ST / TT / Falcon (68000 CPU, MiNT OS).
