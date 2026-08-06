@@ -1,0 +1,63 @@
+name: Atari ST
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds the editor for the Atari ST / TT / Falcon (68000 CPU, MiNT OS).
+#
+# Compiler: m68k-atari-mint-gcc
+#   MiNT (MultiTOS / MiNT Is Not TOS) is a POSIX-like OS layer for
+#   Atari 68k machines.  It supports termios, so the ANSI/VT100
+#   platform layer (ansi.c) is reused unchanged.
+#
+# Artifact: Atari TOS/MiNT executable (.tos).
+# Run with Hatari or ARAnyM.
+# -----------------------------------------------------------------------
+
+jobs:
+  atarist:
+    name: Atari ST MiNT (m68k-atari-mint-gcc)
+    runs-on: ubuntu-latest
+    env:
+      MINT_GCC_VERSION: "12.2.0"
+      MINT_GCC_DIR:     "${{ github.workspace }}/mint-gcc"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore mint-gcc from cache
+        id: cache-mint
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MINT_GCC_DIR }}
+          key: mint-gcc-${{ env.MINT_GCC_VERSION }}-linux
+
+      - name: Download m68k-atari-mint cross-compiler
+        if: steps.cache-mint.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$MINT_GCC_DIR"
+          BASE="https://github.com/mfro0/m68k-atari-mint-gcc/releases/download/v${MINT_GCC_VERSION}"
+          curl -L "$BASE/m68k-atari-mint-gcc-${MINT_GCC_VERSION}-linux.tar.bz2" \
+               -o mint-gcc.tar.bz2
+          tar -xjf mint-gcc.tar.bz2 -C "$MINT_GCC_DIR" --strip-components=1
+
+      - name: Add mint-gcc to PATH
+        run: echo "$MINT_GCC_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Build editor for Atari ST
+        run: |
+          m68k-atari-mint-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-atarist.tos \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
+            -static
+
+      - name: Upload Atari ST binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-atarist
+          path: forever-text-atarist.tos

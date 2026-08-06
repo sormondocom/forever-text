@@ -1,0 +1,71 @@
+name: macOS
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds and tests the editor natively on macOS (Apple Silicon / ARM64).
+#
+# Platform layer: ansi.c — standard POSIX termios + ANSI/VT100 escapes.
+# macOS ships with cc (Apple Clang) which accepts -std=c89.
+#
+# Steps:
+#   1. Build the editor with the ANSI/VT100 platform layer
+#   2. Build and run the buffer unit test suite
+#   3. Upload the compiled editor binary as a downloadable artifact
+# -----------------------------------------------------------------------
+
+jobs:
+  macos-arm64:
+    name: macOS ARM64 (Apple Silicon, native)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build editor (ANSI platform, Apple Clang)
+        run: |
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-macos-arm64 \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c
+
+      - name: Build buffer unit tests
+        run: |
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer-macos \
+            tests/test_buffer.c src/buffer.c
+
+      - name: Run buffer unit tests
+        run: |
+          ./test-buffer-macos | tee unit_test_output.txt
+          grep -q "0 failed" unit_test_output.txt
+
+      - name: Upload macOS ARM64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-macos-arm64
+          path: forever-text-macos-arm64
+
+  macos-x86_64:
+    name: macOS x86-64 (Intel, cross-compiled)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build editor for x86-64 macOS (universal target)
+        run: |
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -arch x86_64 \
+            -Isrc \
+            -o forever-text-macos-x86_64 \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c
+
+      - name: Upload macOS x86-64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-macos-x86_64
+          path: forever-text-macos-x86_64

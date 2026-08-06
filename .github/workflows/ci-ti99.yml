@@ -1,0 +1,87 @@
+name: TI-99/4A (Experimental)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds the editor for the TI-99/4A (TMS9900 CPU) — EXPERIMENTAL.
+#
+# Compiler: gcc-tms9900 (GCC port for the Texas Instruments TMS9900)
+#   The toolchain has no stable prebuilt release track, so this job
+#   builds it from source.  Build times are high; the result is cached
+#   aggressively between runs.
+#
+# The ti99.c platform layer drives the TMS9918A VDP via I/O ports
+# and reads the keyboard matrix via TMS9900 CRU instructions (SBO/SBZ/TB)
+# expressed as SDCC-style inline assembly.
+#
+# *** This job has continue-on-error: true ***
+#   gcc-tms9900 source builds may fail on upstream toolchain changes.
+#   Failures are reported but do NOT block other pipelines.
+#
+# Artifact: TI-99/4A cartridge/loader binary (.bin).
+# Run with Classic99, MAME (ti99_4a driver), or js99er.net.
+# -----------------------------------------------------------------------
+
+jobs:
+  ti99:
+    name: TI-99/4A TMS9900 (Experimental)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      TMS9900_GCC_DIR: "${{ github.workspace }}/tms9900-gcc"
+      # Pin to a specific commit so cache keys are stable
+      TMS9900_GCC_COMMIT: "main"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build prerequisites for gcc-tms9900
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            build-essential flex bison texinfo \
+            libgmp-dev libmpfr-dev libmpc-dev \
+            libssl-dev wget git
+
+      - name: Restore gcc-tms9900 toolchain from cache
+        id: cache-tms9900
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TMS9900_GCC_DIR }}
+          key: tms9900-gcc-${{ env.TMS9900_GCC_COMMIT }}-${{ runner.os }}-v1
+
+      - name: Build gcc-tms9900 from source
+        if: steps.cache-tms9900.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$TMS9900_GCC_DIR"
+          mkdir -p tms9900-build
+
+          # binutils for tms9900
+          git clone --depth 1 https://github.com/jedimatt42/tms9900-gcc.git tms9900-src
+          cd tms9900-src
+          chmod +x build.sh
+          ./build.sh "$TMS9900_GCC_DIR"
+          cd ..
+
+      - name: Add gcc-tms9900 to PATH
+        run: echo "$TMS9900_GCC_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Verify toolchain
+        run: tms9900-gcc --version
+
+      - name: Build editor for TI-99/4A
+        run: |
+          tms9900-gcc \
+            -std=c89 -Wall -Wextra -Os \
+            -Isrc \
+            -o forever-text-ti99.bin \
+            src/main.c src/editor.c src/buffer.c src/platform/ti99.c
+
+      - name: Upload TI-99/4A binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-ti99
+          path: forever-text-ti99.bin

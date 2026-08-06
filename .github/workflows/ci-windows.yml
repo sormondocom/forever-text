@@ -1,0 +1,72 @@
+name: Windows
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Cross-compiles the editor for Windows (x86-64) using MinGW-w64 running
+# on the Ubuntu CI runner.  The result is a standalone .exe that runs
+# on Windows XP and later without any additional dependencies.
+#
+# Platform layer: win32.c — uses the Windows Console API for cursor
+# movement, colour attributes, and raw keyboard input.
+#
+# The compiled binary is uploaded as a downloadable artifact so users
+# can run Forever Text on Windows without installing a compiler.
+# -----------------------------------------------------------------------
+
+jobs:
+  windows-x86_64:
+    name: Windows x86-64 (MinGW cross-compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MinGW-w64 cross-compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-mingw-w64-x86-64
+
+      - name: Build editor for Windows x86-64
+        run: |
+          x86_64-w64-mingw32-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-windows-x86_64.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/win32.c \
+            -static
+
+      - name: Upload Windows x86-64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-windows-x86_64
+          path: forever-text-windows-x86_64.exe
+
+  windows-i686:
+    name: Windows i686 / 32-bit (MinGW cross-compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MinGW-w64 32-bit cross-compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-mingw-w64-i686
+
+      - name: Build editor for Windows i686
+        run: |
+          i686-w64-mingw32-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-windows-i686.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/win32.c \
+            -static
+
+      - name: Upload Windows i686 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-windows-i686
+          path: forever-text-windows-i686.exe

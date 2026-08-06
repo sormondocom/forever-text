@@ -1,0 +1,122 @@
+name: DOS
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds the editor and unit test binary for both DOS targets.
+# Artifacts are loadable in DOSBox or DOSBox-X.
+#
+# dos16  — 16-bit real-mode DOS (ia16-elf-gcc via tkchia PPA)
+#           Uses the BIOS platform layer (INT 10h / INT 16h).
+#           No ANSI.SYS required.
+#
+# dos32  — 32-bit protected-mode DOS (DJGPP, prebuilt download)
+#           Uses the ANSI platform layer.
+#           Requires CWSDPMI or HDPMI32 DOS extender on the target.
+# -----------------------------------------------------------------------
+
+jobs:
+  # =====================================================================
+  # 16-bit real-mode DOS — ia16-elf-gcc
+  # =====================================================================
+  dos16:
+    name: DOS 16-bit (ia16-elf-gcc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add ia16-elf-gcc PPA and install
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:tkchia/build-ia16
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-ia16-elf
+
+      - name: Build editor for 16-bit DOS
+        run: |
+          ia16-elf-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -mcmodel=small \
+            -Isrc \
+            -o forever-text-dos16.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/bios.c \
+            -li86
+
+      - name: Build unit tests for 16-bit DOS
+        run: |
+          ia16-elf-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -mcmodel=small \
+            -Isrc \
+            -o test-buffer-dos16.exe \
+            tests/test_buffer.c src/buffer.c \
+            -li86
+
+      - name: Upload DOS 16-bit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-dos16
+          path: |
+            forever-text-dos16.exe
+            test-buffer-dos16.exe
+
+  # =====================================================================
+  # 32-bit protected-mode DOS — DJGPP
+  # =====================================================================
+  dos32:
+    name: DOS 32-bit (DJGPP)
+    runs-on: ubuntu-latest
+    env:
+      DJGPP_VERSION: "12.2.0"
+      DJGPP_DIR:     "${{ github.workspace }}/djgpp"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore DJGPP from cache
+        id: cache-djgpp
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DJGPP_DIR }}
+          key: djgpp-${{ env.DJGPP_VERSION }}-linux64
+
+      - name: Download DJGPP
+        if: steps.cache-djgpp.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$DJGPP_DIR"
+          BASE="https://github.com/andrewwutw/build-djgpp/releases/download/v${DJGPP_VERSION}"
+          curl -L "$BASE/djgpp-linux64-gcc${DJGPP_VERSION}.tar.bz2" -o djgpp.tar.bz2
+          tar -xjf djgpp.tar.bz2 -C "$DJGPP_DIR" --strip-components=1
+
+      - name: Add DJGPP to PATH
+        run: echo "$DJGPP_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Build editor for 32-bit DOS
+        run: |
+          i586-pc-msdosdjgpp-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-dos32.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
+            -static
+
+      - name: Build unit tests for 32-bit DOS
+        run: |
+          i586-pc-msdosdjgpp-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer-dos32.exe \
+            tests/test_buffer.c src/buffer.c \
+            -static
+
+      - name: Upload DOS 32-bit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-dos32
+          path: |
+            forever-text-dos32.exe
+            test-buffer-dos32.exe

@@ -1,0 +1,287 @@
+name: Native Linux
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds and tests the editor natively on x86-64 Linux.
+#
+# Steps:
+#   1. Build the editor (ANSI/VT100 platform layer)
+#   2. Run the 74-test buffer unit suite
+#   3. Run end-to-end feature verification with expect
+#   4. Capture terminal state at each feature step using tmux (HTML)
+#   5. Capture a PNG screenshot of the running editor via Xvfb + xterm
+#   6. Upload all proof artifacts
+# -----------------------------------------------------------------------
+
+jobs:
+  build-and-test:
+    name: Build, unit test, and capture proof
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------
+      # 1. Build
+      # -----------------------------------------------------------------
+      - name: Install build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y gcc make
+
+      - name: Build editor (ANSI platform)
+        run: |
+          gcc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c
+
+      - name: Build unit test binary
+        run: |
+          gcc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer \
+            tests/test_buffer.c src/buffer.c
+
+      # -----------------------------------------------------------------
+      # 2. Unit tests
+      # -----------------------------------------------------------------
+      - name: Run buffer unit tests
+        run: |
+          ./test-buffer | tee unit_test_output.txt
+          grep -q "0 failed" unit_test_output.txt
+
+      # -----------------------------------------------------------------
+      # 3. End-to-end feature verification (expect)
+      # -----------------------------------------------------------------
+      - name: Install expect and terminal tools
+        run: |
+          sudo apt-get install -y \
+            expect tmux aha \
+            xvfb xterm scrot fonts-dejavu-core
+
+      - name: Create CI test file
+        run: |
+          printf 'First line of test content\nSecond line of test content\nThird line of test content\n' \
+            > ci_test.txt
+
+      - name: Run feature verification
+        run: |
+          mkdir -p proof
+          expect -f tests/verify_features.exp ./forever-text ci_test.txt \
+            | tee proof/feature_verification.txt
+
+      # -----------------------------------------------------------------
+      # 4. HTML terminal captures via tmux
+      #    Drive the editor step-by-step, capture the live terminal state
+      #    at each feature using tmux capture-pane -e (preserves ANSI),
+      #    then convert each capture to a standalone HTML file with aha.
+      # -----------------------------------------------------------------
+      - name: Capture terminal state at each feature (HTML proof)
+        run: |
+          mkdir -p proof/html
+
+          # Write the test content
+          printf 'First line of test content\nSecond line of test content\nThird line of test content\n' \
+            > ci_test.txt
+
+          # Start a detached tmux session sized like a classic terminal
+          tmux new-session -d -s ft -x 100 -y 35
+
+          capture() {
+            local name="$1"
+            tmux capture-pane -t ft -p -e \
+              | aha --black --title "Forever Text — $name" \
+              > "proof/html/${name}.html"
+          }
+
+          # Launch editor
+          tmux send-keys -t ft './forever-text ci_test.txt' Enter
+          sleep 1
+          capture "01_startup"
+
+          # Type a line of text
+          tmux send-keys -t ft 'CI verification line' ''
+          sleep 0.3
+          capture "02_text_entry"
+
+          # Press Enter to insert newline
+          tmux send-keys -t ft Enter
+          sleep 0.2
+          capture "03_newline"
+
+          # Move cursor up
+          tmux send-keys -t ft Up
+          sleep 0.2
+          capture "04_cursor_up"
+
+          # Ctrl+G goto line 3
+          tmux send-keys -t ft C-g
+          sleep 0.3
+          capture "05_goto_prompt"
+          tmux send-keys -t ft '3' Enter
+          sleep 0.3
+          capture "06_goto_result"
+
+          # Ctrl+K cut line
+          tmux send-keys -t ft C-k
+          sleep 0.3
+          capture "07_cut_line"
+
+          # Ctrl+U paste
+          tmux send-keys -t ft C-u
+          sleep 0.3
+          capture "08_paste"
+
+          # Ctrl+F find
+          tmux send-keys -t ft C-f
+          sleep 0.3
+          capture "09_find_prompt"
+          tmux send-keys -t ft 'verification' Enter
+          sleep 0.3
+          capture "10_find_result"
+
+          # Ctrl+S save
+          tmux send-keys -t ft C-s
+          sleep 0.4
+          capture "11_saved"
+
+          # Ctrl+Q quit
+          tmux send-keys -t ft C-q
+          sleep 0.3
+          capture "12_quit"
+
+          tmux kill-session -t ft 2>/dev/null || true
+
+          echo "Generated $(ls proof/html/*.html | wc -l) HTML captures"
+
+      # -----------------------------------------------------------------
+      # 5. PNG screenshots via Xvfb + xterm
+      #    Runs the editor in a real terminal emulator on a virtual X
+      #    display.  Captures PNG screenshots at startup and after key
+      #    interactions using xdotool and scrot.
+      # -----------------------------------------------------------------
+      - name: Capture PNG screenshots via Xvfb
+        run: |
+          mkdir -p proof/png
+
+          printf 'Hello Forever Text\nThis is line two\nAnd line three\n' \
+            > ci_screenshot.txt
+
+          # Start a headless X server
+          Xvfb :99 -screen 0 1280x800x24 -ac &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 1
+
+          # Launch the editor in an xterm with a fixed geometry
+          xterm \
+            -bg '#1a1a1a' -fg '#e8e8e8' \
+            -geometry 100x35+20+20 \
+            -fa 'DejaVu Sans Mono' -fs 13 \
+            -title 'Forever Text' \
+            -e './forever-text ci_screenshot.txt' &
+          XTERM_PID=$!
+          sleep 2
+
+          # Screenshot 1: startup state
+          scrot proof/png/screenshot_01_startup.png
+          echo "Captured: startup"
+
+          # Type some text
+          DISPLAY=:99 xdotool type --clearmodifiers --delay 80 'Hello from CI pipeline'
+          sleep 0.5
+          scrot proof/png/screenshot_02_typing.png
+          echo "Captured: after typing"
+
+          # Press Enter (newline)
+          DISPLAY=:99 xdotool key Return
+          sleep 0.3
+          scrot proof/png/screenshot_03_newline.png
+          echo "Captured: after Enter"
+
+          # Ctrl+G goto line
+          DISPLAY=:99 xdotool key ctrl+g
+          sleep 0.4
+          scrot proof/png/screenshot_04_goto_prompt.png
+          echo "Captured: goto prompt"
+          DISPLAY=:99 xdotool type --clearmodifiers '2'
+          DISPLAY=:99 xdotool key Return
+          sleep 0.3
+          scrot proof/png/screenshot_05_goto_result.png
+          echo "Captured: goto result"
+
+          # Ctrl+K cut line
+          DISPLAY=:99 xdotool key ctrl+k
+          sleep 0.3
+          scrot proof/png/screenshot_06_cut.png
+          echo "Captured: cut line"
+
+          # Ctrl+U paste
+          DISPLAY=:99 xdotool key ctrl+u
+          sleep 0.3
+          scrot proof/png/screenshot_07_paste.png
+          echo "Captured: paste"
+
+          # Ctrl+F find
+          DISPLAY=:99 xdotool key ctrl+f
+          sleep 0.4
+          scrot proof/png/screenshot_08_find_prompt.png
+          echo "Captured: find prompt"
+          DISPLAY=:99 xdotool type --clearmodifiers 'CI'
+          DISPLAY=:99 xdotool key Return
+          sleep 0.3
+          scrot proof/png/screenshot_09_find_result.png
+          echo "Captured: find result"
+
+          # Ctrl+S save
+          DISPLAY=:99 xdotool key ctrl+s
+          sleep 0.4
+          scrot proof/png/screenshot_10_saved.png
+          echo "Captured: saved"
+
+          # Ctrl+Q quit
+          DISPLAY=:99 xdotool key ctrl+q
+          sleep 0.5
+          scrot proof/png/screenshot_11_quit.png
+          echo "Captured: quit"
+
+          kill $XTERM_PID $XVFB_PID 2>/dev/null || true
+
+          echo "Generated $(ls proof/png/*.png | wc -l) PNG screenshots"
+
+      # -----------------------------------------------------------------
+      # 6. Upload all proof artifacts
+      # -----------------------------------------------------------------
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-unit-tests
+          path: unit_test_output.txt
+
+      - name: Upload feature verification log
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-feature-verification
+          path: proof/feature_verification.txt
+
+      - name: Upload HTML terminal captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-html-captures
+          path: proof/html/
+
+      - name: Upload PNG screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-png-screenshots
+          path: proof/png/
+
+      - name: Upload compiled editor binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-linux-x86_64
+          path: forever-text

@@ -1,0 +1,286 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" width="720" height="480">
+  <defs>
+
+    <!-- ── Stone gradients ── -->
+    <!-- Left tablet: light from upper-left -->
+    <radialGradient id="stoneL" cx="36%" cy="26%" r="74%">
+      <stop offset="0%"   stop-color="#F0E4CA"/>
+      <stop offset="45%"  stop-color="#D4BA96"/>
+      <stop offset="80%"  stop-color="#B89C70"/>
+      <stop offset="100%" stop-color="#9A7C50"/>
+    </radialGradient>
+
+    <!-- Right tablet: light from upper-right (mirror) -->
+    <radialGradient id="stoneR" cx="64%" cy="26%" r="74%">
+      <stop offset="0%"   stop-color="#EEE0C6"/>
+      <stop offset="45%"  stop-color="#D2B892"/>
+      <stop offset="80%"  stop-color="#B69A6C"/>
+      <stop offset="100%" stop-color="#987A4E"/>
+    </radialGradient>
+
+    <!-- ── Tablet drop shadow ── -->
+    <filter id="tabShadow" x="-35%" y="-25%" width="180%" height="170%">
+      <feDropShadow dx="6" dy="14" stdDeviation="9"
+                    flood-color="#1E0E04" flood-opacity="0.55"/>
+    </filter>
+
+    <!-- ── Clip paths (same shape, separate IDs for clarity) ──
+         The arch: semicircle radius=107, centre at (0,-58).
+         Top of arch: (0, -165).  Bottom of rect: y=168.        -->
+    <clipPath id="clipL">
+      <path d="M -107,168 L -107,-58 A 107,107 0 0,1 107,-58 L 107,168 Z"/>
+    </clipPath>
+    <clipPath id="clipR">
+      <path d="M -107,168 L -107,-58 A 107,107 0 0,1 107,-58 L 107,168 Z"/>
+    </clipPath>
+
+  </defs>
+
+  <!-- ── Warm sandstone background ── -->
+  <rect width="720" height="480" fill="#EDE4CC"/>
+
+  <!-- Vignette (darkens corners slightly for depth) -->
+  <radialGradient id="vignette" cx="50%" cy="48%" r="70%">
+    <stop offset="60%"  stop-color="transparent"/>
+    <stop offset="100%" stop-color="#A07840" stop-opacity="0.18"/>
+  </radialGradient>
+  <rect width="720" height="480" fill="url(#vignette)"/>
+
+  <!-- Ground shadow pools beneath each tablet -->
+  <ellipse cx="175" cy="412" rx="136" ry="10" fill="#7A5C30" opacity="0.22"
+           transform="rotate(-9 175 412)"/>
+  <ellipse cx="545" cy="412" rx="136" ry="10" fill="#7A5C30" opacity="0.22"
+           transform="rotate(9 545 412)"/>
+
+
+  <!-- ════════════════════════════════════════════════════════
+       LEFT TABLET — tilted left, showing normal editing state
+       Local origin = visual centre of tablet.
+       Tablet extends: x ∈ [-110, 110]  y ∈ [-170, 170]
+       ════════════════════════════════════════════════════════ -->
+  <g transform="translate(175, 215) rotate(-9)" filter="url(#tabShadow)">
+
+    <!-- Stone body -->
+    <path d="M -110,170 L -110,-60 A 110,110 0 0,1 110,-60 L 110,170 Z"
+          fill="url(#stoneL)"/>
+
+    <!-- Outer outline (thick, rough) -->
+    <path d="M -110,170 L -110,-60 A 110,110 0 0,1 110,-60 L 110,170 Z"
+          fill="none" stroke="#6A5030" stroke-width="5" stroke-linejoin="round"/>
+
+    <!-- Inner bevel — highlight (top / left) -->
+    <path d="M -106,167 L -106,-57 A 106,106 0 0,1 0,-165"
+          fill="none" stroke="#F4E8D0" stroke-width="2.5"
+          opacity="0.60" stroke-linecap="round"/>
+
+    <!-- Inner bevel — shadow (bottom / right) -->
+    <path d="M 0,-165 A 106,106 0 0,1 106,-57 L 106,167"
+          fill="none" stroke="#6A5030" stroke-width="2"
+          opacity="0.45" stroke-linecap="round"/>
+
+    <!-- Sedimentary strata lines -->
+    <g fill="none" stroke="#6A5030" stroke-linecap="round">
+      <path d="M -80,35  Q 2,33  80,36"  stroke-width="0.7" opacity="0.13"/>
+      <path d="M -88,68  Q 0,66  85,69"  stroke-width="0.5" opacity="0.10"/>
+      <path d="M -83,102 Q -2,100 82,103" stroke-width="0.6" opacity="0.12"/>
+      <path d="M -70,135 Q 5,133 72,136" stroke-width="0.4" opacity="0.09"/>
+    </g>
+
+    <!-- Cracks -->
+    <path d="M -36,-95 L -29,-72 L -33,-50 L -25,-28"
+          fill="none" stroke="#6A5030" stroke-width="0.9"
+          stroke-linecap="round" opacity="0.42"/>
+    <path d="M 62,88 L 68,110 L 63,130"
+          fill="none" stroke="#6A5030" stroke-width="0.7"
+          stroke-linecap="round" opacity="0.32"/>
+    <path d="M -72,-8 L -66,9"
+          fill="none" stroke="#6A5030" stroke-width="0.5"
+          stroke-linecap="round" opacity="0.24"/>
+
+    <!-- ── Editor UI, clipped to tablet shape ── -->
+    <g clip-path="url(#clipL)">
+
+      <!-- ▌TITLE BAR — reverse video, full width -->
+      <rect x="-115" y="-111" width="230" height="18" fill="#1A110B"/>
+      <text x="-93" y="-96"
+            font-family="'Courier New',Courier,monospace"
+            font-size="8.5" fill="#DCC8A2" letter-spacing="0.5"
+            >Forever Text v0.1</text>
+
+      <!-- ▌STATUS LINE — filename + position -->
+      <rect x="-115" y="-93" width="230" height="15" fill="#251808"/>
+      <text x="-93" y="-81"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#96866A"
+            >stone.txt  Ln:1 Co:1  [Clean]</text>
+
+      <!-- ── thin separator ── -->
+      <line x1="-93" y1="-69" x2="93" y2="-69"
+            stroke="#7A6040" stroke-width="0.5" opacity="0.45"/>
+
+      <!-- ▌COLUMN RULER -->
+      <text x="-93" y="-59"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#7A6040"
+            >-+--1--+--v--+--3--+--4--</text>
+
+      <!-- ▌EDITING AREA -->
+      <text x="-93" y="-45" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">In the beginning was the</text>
+      <text x="-93" y="-33" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">word, and the word was</text>
+      <text x="-93" y="-21" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">carved in stone for</text>
+      <text x="-93" y="-9"  font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">eternity.</text>
+
+      <text x="-93" y="+15" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">C89.  No runtime.  No GC.</text>
+      <text x="-93" y="+27" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">Just the metal.</text>
+
+      <!-- Blinking cursor (static block) -->
+      <rect x="-93" y="19" width="5.5" height="8.5" fill="#2A1A0C"/>
+
+      <!-- ▌HOTKEY BAR ROW 1 -->
+      <rect x="-115" y="128" width="230" height="17" fill="#1A110B"/>
+      <text x="-93" y="140"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#DCC8A2" letter-spacing="0.3"
+            >^S Save  ^L Load  ^Q Quit</text>
+
+      <!-- ▌HOTKEY BAR ROW 2 -->
+      <rect x="-115" y="145" width="230" height="17" fill="#251808"/>
+      <text x="-93" y="157"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#96866A"
+            >^K Cut  ^U Paste  ^F Find  ^G</text>
+
+    </g>
+  </g>
+
+
+  <!-- ════════════════════════════════════════════════════════
+       RIGHT TABLET — tilted right, showing Ctrl+F active
+       ════════════════════════════════════════════════════════ -->
+  <g transform="translate(545, 215) rotate(9)" filter="url(#tabShadow)">
+
+    <!-- Stone body -->
+    <path d="M -110,170 L -110,-60 A 110,110 0 0,1 110,-60 L 110,170 Z"
+          fill="url(#stoneR)"/>
+
+    <!-- Outer outline -->
+    <path d="M -110,170 L -110,-60 A 110,110 0 0,1 110,-60 L 110,170 Z"
+          fill="none" stroke="#6A5030" stroke-width="5" stroke-linejoin="round"/>
+
+    <!-- Inner bevel — highlight -->
+    <path d="M -106,167 L -106,-57 A 106,106 0 0,1 0,-165"
+          fill="none" stroke="#F4E8D0" stroke-width="2.5"
+          opacity="0.60" stroke-linecap="round"/>
+
+    <!-- Inner bevel — shadow -->
+    <path d="M 0,-165 A 106,106 0 0,1 106,-57 L 106,167"
+          fill="none" stroke="#6A5030" stroke-width="2"
+          opacity="0.45" stroke-linecap="round"/>
+
+    <!-- Strata lines -->
+    <g fill="none" stroke="#6A5030" stroke-linecap="round">
+      <path d="M -78,40  Q 0,38  80,41"  stroke-width="0.7" opacity="0.13"/>
+      <path d="M -84,72  Q 2,70  82,73"  stroke-width="0.5" opacity="0.10"/>
+      <path d="M -80,108 Q -1,106 79,109" stroke-width="0.6" opacity="0.12"/>
+    </g>
+
+    <!-- Cracks -->
+    <path d="M 31,-108 L 23,-84 L 28,-62"
+          fill="none" stroke="#6A5030" stroke-width="0.9"
+          stroke-linecap="round" opacity="0.42"/>
+    <path d="M -62,66 L -54,88 L -59,108 L -50,126"
+          fill="none" stroke="#6A5030" stroke-width="0.7"
+          stroke-linecap="round" opacity="0.34"/>
+    <path d="M 74,-4 L 68,12"
+          fill="none" stroke="#6A5030" stroke-width="0.5"
+          stroke-linecap="round" opacity="0.22"/>
+
+    <!-- ── Editor UI, clipped to tablet shape ── -->
+    <g clip-path="url(#clipR)">
+
+      <!-- ▌TITLE BAR — [Modified] state -->
+      <rect x="-115" y="-111" width="230" height="18" fill="#1A110B"/>
+      <text x="-93" y="-96"
+            font-family="'Courier New',Courier,monospace"
+            font-size="8.5" fill="#DCC8A2" letter-spacing="0.5"
+            >Forever Text v0.1</text>
+
+      <!-- ▌STATUS LINE -->
+      <rect x="-115" y="-93" width="230" height="15" fill="#251808"/>
+      <text x="-93" y="-81"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#96866A"
+            >ages.txt Ln:5 Co:3 [Modified]</text>
+
+      <!-- thin separator -->
+      <line x1="-93" y1="-69" x2="93" y2="-69"
+            stroke="#7A6040" stroke-width="0.5" opacity="0.45"/>
+
+      <!-- ▌COLUMN RULER — cursor marker at col ~13 -->
+      <text x="-93" y="-59"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#7A6040"
+            >-+--1--+--2--+-v--+--4--</text>
+
+      <!-- ▌EDITING AREA -->
+      <text x="-93" y="-45" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">Cross-compiled to every</text>
+      <text x="-93" y="-33" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">arch since dawn of C.</text>
+      <text x="-93" y="-21" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">From PDP-11 to RISC-V,</text>
+      <text x="-93" y="-9"  font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">from 6502 to TMS9900.</text>
+
+      <text x="-93" y="+15" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">Written once.</text>
+      <text x="-93" y="+27" font-family="'Courier New',Courier,monospace" font-size="7.5" fill="#2A1A0C">Runs everywhere.</text>
+
+      <!-- Cursor block -->
+      <rect x="-93" y="19" width="5.5" height="8.5" fill="#2A1A0C"/>
+
+      <!-- ▌FOOTER — Ctrl+F Find prompt active -->
+      <rect x="-115" y="128" width="230" height="34" fill="#1A110B"/>
+
+      <!-- "Find:" prompt label -->
+      <text x="-93" y="141"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#C0A060">Find: </text>
+      <!-- Query text (highlighted amber) -->
+      <text x="-63" y="141"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7.5" fill="#F4D888">eternity</text>
+      <!-- Cursor in find prompt -->
+      <rect x="1" y="133" width="5" height="9" fill="#F4D888" opacity="0.90"/>
+
+      <!-- hint line -->
+      <text x="-93" y="156"
+            font-family="'Courier New',Courier,monospace"
+            font-size="7" fill="#5A4828">ENTER confirm    ESC cancel</text>
+
+    </g>
+  </g>
+
+
+  <!-- ══════════════════════════════════════════
+       PROJECT TITLE — chiselled look via offset
+       ══════════════════════════════════════════ -->
+
+  <!-- Shadow layer (light, offset down-right — simulates chisel cut depth) -->
+  <text x="362" y="453"
+        text-anchor="middle"
+        font-family="'Courier New',Courier,monospace"
+        font-size="22" font-weight="bold"
+        fill="#F4E8D0" opacity="0.65"
+        letter-spacing="5">FOREVER TEXT</text>
+
+  <!-- Main text -->
+  <text x="360" y="452"
+        text-anchor="middle"
+        font-family="'Courier New',Courier,monospace"
+        font-size="22" font-weight="bold"
+        fill="#3C2810" letter-spacing="5">FOREVER TEXT</text>
+
+  <!-- Tagline -->
+  <text x="360" y="472"
+        text-anchor="middle"
+        font-family="'Courier New',Courier,monospace"
+        font-size="9" fill="#7A5E36" letter-spacing="2"
+        >Carved once.  Compiled everywhere.</text>
+
+</svg>

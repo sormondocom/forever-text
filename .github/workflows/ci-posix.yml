@@ -1,0 +1,176 @@
+name: POSIX Cross-Compile
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Compiles the editor for every POSIX/Unix cross-target and runs the
+# buffer unit tests under QEMU user-mode emulation on each architecture.
+#
+# Two parallel matrix jobs:
+#   compile  — build the editor binary (compile correctness)
+#   test     — build + QEMU-execute the unit test binary (runtime correctness)
+# -----------------------------------------------------------------------
+
+jobs:
+  # =====================================================================
+  # Compile the editor for each architecture
+  # =====================================================================
+  compile:
+    name: Compile (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: m68k
+            cc:     m68k-linux-gnu-gcc
+            pkg:    gcc-m68k-linux-gnu
+
+          - target: sparc
+            cc:     sparc-linux-gnu-gcc
+            pkg:    gcc-sparc-linux-gnu
+
+          - target: ppc
+            cc:     powerpc-linux-gnu-gcc
+            pkg:    gcc-powerpc-linux-gnu
+
+          - target: mips
+            cc:     mips-linux-gnu-gcc
+            pkg:    gcc-mips-linux-gnu
+
+          - target: mipsel
+            cc:     mipsel-linux-gnu-gcc
+            pkg:    gcc-mipsel-linux-gnu
+
+          - target: s390x
+            cc:     s390x-linux-gnu-gcc
+            pkg:    gcc-s390x-linux-gnu
+
+          - target: riscv64
+            cc:     riscv64-linux-gnu-gcc
+            pkg:    gcc-riscv64-linux-gnu
+
+          - target: arm
+            cc:     arm-linux-gnueabi-gcc
+            pkg:    gcc-arm-linux-gnueabi
+
+          - target: arm64
+            cc:     aarch64-linux-gnu-gcc
+            pkg:    gcc-aarch64-linux-gnu
+
+          - target: vax
+            cc:     vax-linux-gnu-gcc
+            pkg:    gcc-vax-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross-compiler
+        run: sudo apt-get update -qq && sudo apt-get install -y ${{ matrix.pkg }}
+
+      - name: Compile editor
+        run: |
+          ${{ matrix.cc }} \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-${{ matrix.target }} \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
+            -static
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-${{ matrix.target }}
+          path: forever-text-${{ matrix.target }}
+
+  # =====================================================================
+  # Compile unit tests and run under QEMU user-mode
+  # =====================================================================
+  test:
+    name: QEMU test (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: m68k
+            cc:     m68k-linux-gnu-gcc
+            pkg:    gcc-m68k-linux-gnu
+            qemu:   qemu-m68k-static
+
+          - target: sparc
+            cc:     sparc-linux-gnu-gcc
+            pkg:    gcc-sparc-linux-gnu
+            qemu:   qemu-sparc-static
+
+          - target: ppc
+            cc:     powerpc-linux-gnu-gcc
+            pkg:    gcc-powerpc-linux-gnu
+            qemu:   qemu-ppc-static
+
+          - target: mips
+            cc:     mips-linux-gnu-gcc
+            pkg:    gcc-mips-linux-gnu
+            qemu:   qemu-mips-static
+
+          - target: s390x
+            cc:     s390x-linux-gnu-gcc
+            pkg:    gcc-s390x-linux-gnu
+            qemu:   qemu-s390x-static
+
+          - target: riscv64
+            cc:     riscv64-linux-gnu-gcc
+            pkg:    gcc-riscv64-linux-gnu
+            qemu:   qemu-riscv64-static
+
+          - target: arm
+            cc:     arm-linux-gnueabi-gcc
+            pkg:    gcc-arm-linux-gnueabi
+            qemu:   qemu-arm-static
+
+          - target: arm64
+            cc:     aarch64-linux-gnu-gcc
+            pkg:    gcc-aarch64-linux-gnu
+            qemu:   qemu-aarch64-static
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross-compiler and QEMU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ${{ matrix.pkg }} qemu-user-static
+
+      - name: Build buffer unit tests for ${{ matrix.target }}
+        run: |
+          ${{ matrix.cc }} \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer-${{ matrix.target }} \
+            tests/test_buffer.c src/buffer.c \
+            -static
+
+      - name: Run buffer unit tests under QEMU (${{ matrix.qemu }})
+        run: ${{ matrix.qemu }} ./test-buffer-${{ matrix.target }}
+
+      - name: Build platform compliance tests for ${{ matrix.target }}
+        run: |
+          ${{ matrix.cc }} \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-platform-${{ matrix.target }} \
+            tests/test_platform.c src/platform/ansi.c \
+            -static
+
+      - name: Run platform tests under QEMU (${{ matrix.qemu }}) [headless]
+        run: ${{ matrix.qemu }} ./test-platform-${{ matrix.target }} headless
+
+      - name: Upload platform test binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-platform-${{ matrix.target }}
+          path: test-platform-${{ matrix.target }}

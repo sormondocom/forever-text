@@ -1,0 +1,55 @@
+name: TRS-80
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# -----------------------------------------------------------------------
+# Builds the editor for the TRS-80 Model III (Zilog Z80 CPU).
+#
+# Compiler: SDCC (Small Device C Compiler), available in Ubuntu apt.
+#
+# The z80.c platform layer writes directly to TRS-80 video RAM at
+# 0x3C00 and reads the keyboard via the ROM KBCHAR routine at 0x0049
+# using SDCC inline assembly.
+#
+# SDCC produces an Intel HEX file; objcopy converts it to a TRS-80
+# CMD binary that can be loaded from TRSDOS or run in an emulator.
+#
+# Artifact: .ihx (Intel HEX) + .cmd (TRS-80 binary).
+# Run with sdltrs or trs80gp.
+# -----------------------------------------------------------------------
+
+jobs:
+  trs80:
+    name: TRS-80 Model III (SDCC Z80)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDCC and binutils
+        run: sudo apt-get update -qq && sudo apt-get install -y sdcc binutils
+
+      - name: Build editor for TRS-80
+        run: |
+          sdcc --std-c89 -mz80 \
+            -Isrc \
+            --code-loc 0x5200 --data-loc 0x5C00 \
+            --out-fmt-ihx \
+            -o forever-text-trs80.ihx \
+            src/main.c src/editor.c src/buffer.c src/platform/z80.c
+
+      - name: Convert to TRS-80 CMD binary
+        run: |
+          objcopy -I ihex -O binary \
+            forever-text-trs80.ihx forever-text-trs80.cmd
+
+      - name: Upload TRS-80 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: forever-text-trs80
+          path: |
+            forever-text-trs80.ihx
+            forever-text-trs80.cmd

@@ -1,0 +1,79 @@
+# ────────────────────────────────────────────────────────────────────
+# Forever Text — .gitignore
+# ────────────────────────────────────────────────────────────────────
+
+# ── Compiled editor binaries ──────────────────────────────────────────
+# Native builds
+forever-text
+forever-text.exe
+
+# All cross-compiled targets (forever-text-<arch> / forever-text-<arch>.exe)
+forever-text-*
+
+# ── Test binaries ─────────────────────────────────────────────────────
+test-buffer
+test-buffer.exe
+test-buffer-*
+
+test-platform
+test-platform.exe
+test-platform-*
+
+# ── Build intermediates ───────────────────────────────────────────────
+# Generic object files (cross-compilers may leave these)
+*.o
+
+# SDCC intermediates produced when building the TRS-80/Z80 target
+*.asm
+*.rel
+*.lst
+*.sym
+*.map
+*.mem
+*.lk
+
+# ── Test runtime files ────────────────────────────────────────────────
+ft_test_tmp.txt
+
+# CI scratch files
+ci_test.txt
+ci_screenshot.txt
+unit_test_output.txt
+
+# CI proof artifacts (HTML terminal captures, PNG screenshots)
+proof/
+
+# ── Downloaded cross-toolchains (cached during local builds) ──────────
+# Archive files fetched by CI or local toolchain setup scripts
+*.tar.bz2
+*.tar.gz
+*.zip
+
+# Unpacked toolchain trees
+djgpp/
+amiga-gcc/
+mint-gcc/
+tms9900-gcc/
+tms9900-src/
+tms9900-build/
+
+# ── macOS ─────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ── Windows ───────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Common editor backup and swap files ──────────────────────────────
+*~
+*.swp
+*.swo
+*.bak
+*.orig
+\#*\#
+.\#*
