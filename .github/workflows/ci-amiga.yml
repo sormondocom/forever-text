@@ -25,39 +25,21 @@ jobs:
   amiga:
     name: Amiga 68k (amiga-gcc)
     runs-on: ubuntu-latest
-    env:
-      AMIGA_GCC_VERSION: "11.2"
-      AMIGA_GCC_DIR:     "${{ github.workspace }}/amiga-gcc"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore amiga-gcc from cache
-        id: cache-amiga
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.AMIGA_GCC_DIR }}
-          key: amiga-gcc-${{ env.AMIGA_GCC_VERSION }}-linux64
-
-      - name: Download amiga-gcc
-        if: steps.cache-amiga.outputs.cache-hit != 'true'
+      - name: Build editor for Amiga (via amigadev/crosstools Docker)
         run: |
-          mkdir -p "$AMIGA_GCC_DIR"
-          curl -L \
-            "https://github.com/bebbo/amiga-gcc/releases/download/gcc-${AMIGA_GCC_VERSION}/amiga-gcc-${AMIGA_GCC_VERSION}-linux64.tar.bz2" \
-            -o amiga-gcc.tar.bz2
-          tar -xjf amiga-gcc.tar.bz2 -C "$AMIGA_GCC_DIR" --strip-components=1
-
-      - name: Add amiga-gcc to PATH
-        run: echo "$AMIGA_GCC_DIR/bin" >> "$GITHUB_PATH"
-
-      - name: Build editor for Amiga
-        run: |
-          m68k-amigaos-gcc \
-            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
-            -Isrc \
-            -o forever-text-amiga \
-            src/main.c src/editor.c src/buffer.c src/platform/amiga.c \
-            -noixemul
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            amigadev/crosstools:m68k-amigaos \
+            m68k-amigaos-gcc \
+              -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+              -Isrc \
+              -o forever-text-amiga \
+              src/main.c src/editor.c src/buffer.c src/platform/amiga.c \
+              -noixemul
 
       - name: Upload Amiga binary
         uses: actions/upload-artifact@v4

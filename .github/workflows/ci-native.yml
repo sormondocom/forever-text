@@ -60,7 +60,7 @@ jobs:
         run: |
           sudo apt-get install -y \
             expect tmux aha \
-            xvfb xterm scrot fonts-dejavu-core
+            xvfb xterm scrot fonts-dejavu-core xdotool
 
       - name: Create CI test file
         run: |

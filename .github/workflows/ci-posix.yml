@@ -29,10 +29,6 @@ jobs:
             cc:     m68k-linux-gnu-gcc
             pkg:    gcc-m68k-linux-gnu
 
-          - target: sparc
-            cc:     sparc-linux-gnu-gcc
-            pkg:    gcc-sparc-linux-gnu
-
           - target: ppc
             cc:     powerpc-linux-gnu-gcc
             pkg:    gcc-powerpc-linux-gnu
@@ -60,10 +56,6 @@ jobs:
           - target: arm64
             cc:     aarch64-linux-gnu-gcc
             pkg:    gcc-aarch64-linux-gnu
-
-          - target: vax
-            cc:     vax-linux-gnu-gcc
-            pkg:    gcc-vax-linux-gnu
 
     steps:
       - uses: actions/checkout@v4
@@ -100,11 +92,6 @@ jobs:
             cc:     m68k-linux-gnu-gcc
             pkg:    gcc-m68k-linux-gnu
             qemu:   qemu-m68k-static
-
-          - target: sparc
-            cc:     sparc-linux-gnu-gcc
-            pkg:    gcc-sparc-linux-gnu
-            qemu:   qemu-sparc-static
 
           - target: ppc
             cc:     powerpc-linux-gnu-gcc

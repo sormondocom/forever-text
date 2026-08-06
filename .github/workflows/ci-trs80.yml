@@ -33,12 +33,15 @@ jobs:
 
       - name: Build editor for TRS-80
         run: |
+          sdcc --std-c89 -mz80 -c -Isrc src/editor.c
+          sdcc --std-c89 -mz80 -c -Isrc src/buffer.c
+          sdcc --std-c89 -mz80 -c -Isrc src/platform/z80.c
           sdcc --std-c89 -mz80 \
             -Isrc \
             --code-loc 0x5200 --data-loc 0x5C00 \
             --out-fmt-ihx \
             -o forever-text-trs80.ihx \
-            src/main.c src/editor.c src/buffer.c src/platform/z80.c
+            src/main.c editor.rel buffer.rel z80.rel
 
       - name: Convert to TRS-80 CMD binary
         run: |

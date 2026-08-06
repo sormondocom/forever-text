@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install -y software-properties-common
           sudo add-apt-repository -y ppa:tkchia/build-ia16
           sudo apt-get update -qq
-          sudo apt-get install -y gcc-ia16-elf
+          sudo apt-get install -y gcc-ia16-elf libi86-ia16-elf
 
       - name: Build editor for 16-bit DOS
         run: |
@@ -71,8 +71,9 @@ jobs:
     name: DOS 32-bit (DJGPP)
     runs-on: ubuntu-latest
     env:
-      DJGPP_VERSION: "12.2.0"
-      DJGPP_DIR:     "${{ github.workspace }}/djgpp"
+      DJGPP_TAG:   "3.4"
+      DJGPP_FNAME: "1220"
+      DJGPP_DIR:   "${{ github.workspace }}/djgpp"
     steps:
       - uses: actions/checkout@v4
 
@@ -81,14 +82,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DJGPP_DIR }}
-          key: djgpp-${{ env.DJGPP_VERSION }}-linux64
+          key: djgpp-v${{ env.DJGPP_TAG }}-linux64
 
       - name: Download DJGPP
         if: steps.cache-djgpp.outputs.cache-hit != 'true'
         run: |
           mkdir -p "$DJGPP_DIR"
-          BASE="https://github.com/andrewwutw/build-djgpp/releases/download/v${DJGPP_VERSION}"
-          curl -L "$BASE/djgpp-linux64-gcc${DJGPP_VERSION}.tar.bz2" -o djgpp.tar.bz2
+          BASE="https://github.com/andrewwutw/build-djgpp/releases/download/v${DJGPP_TAG}"
+          curl -L "$BASE/djgpp-linux64-gcc${DJGPP_FNAME}.tar.bz2" -o djgpp.tar.bz2
           tar -xjf djgpp.tar.bz2 -C "$DJGPP_DIR" --strip-components=1
 
       - name: Add DJGPP to PATH

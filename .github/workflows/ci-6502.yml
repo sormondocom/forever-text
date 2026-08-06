@@ -35,7 +35,7 @@ jobs:
 
       - name: Build for C64
         run: |
-          cl65 -std=c89 -Wall -Werror -Os -t c64 \
+          cl65 -Wall -Werror -Os -t c64 \
             -Isrc \
             -o forever-text-c64.prg \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
@@ -57,7 +57,7 @@ jobs:
 
       - name: Build for Atari 8-bit
         run: |
-          cl65 -std=c89 -Wall -Werror -Os -t atari \
+          cl65 -Wall -Werror -Os -t atari \
             -Isrc \
             -o forever-text-atari8.xex \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
@@ -79,7 +79,7 @@ jobs:
 
       - name: Build for Apple IIe enhanced
         run: |
-          cl65 -std=c89 -Wall -Werror -Os -t apple2enh \
+          cl65 -Wall -Werror -Os -t apple2enh \
             -Isrc \
             -o forever-text-apple2 \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c

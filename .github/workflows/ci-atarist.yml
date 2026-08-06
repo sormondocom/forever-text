@@ -21,30 +21,14 @@ jobs:
   atarist:
     name: Atari ST MiNT (m68k-atari-mint-gcc)
     runs-on: ubuntu-latest
-    env:
-      MINT_GCC_VERSION: "12.2.0"
-      MINT_GCC_DIR:     "${{ github.workspace }}/mint-gcc"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore mint-gcc from cache
-        id: cache-mint
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.MINT_GCC_DIR }}
-          key: mint-gcc-${{ env.MINT_GCC_VERSION }}-linux
-
-      - name: Download m68k-atari-mint cross-compiler
-        if: steps.cache-mint.outputs.cache-hit != 'true'
+      - name: Install m68k-atari-mint cross-compiler
         run: |
-          mkdir -p "$MINT_GCC_DIR"
-          BASE="https://github.com/mfro0/m68k-atari-mint-gcc/releases/download/v${MINT_GCC_VERSION}"
-          curl -L "$BASE/m68k-atari-mint-gcc-${MINT_GCC_VERSION}-linux.tar.bz2" \
-               -o mint-gcc.tar.bz2
-          tar -xjf mint-gcc.tar.bz2 -C "$MINT_GCC_DIR" --strip-components=1
-
-      - name: Add mint-gcc to PATH
-        run: echo "$MINT_GCC_DIR/bin" >> "$GITHUB_PATH"
+          sudo apt-add-repository -y ppa:vriviere/ppa
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-m68k-atari-mint mintlib-m68k-atari-mint
 
       - name: Build editor for Atari ST
         run: |
