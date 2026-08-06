@@ -3,6 +3,7 @@ name: macOS
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds and tests the editor natively on macOS (Apple Silicon / ARM64).

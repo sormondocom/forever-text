@@ -3,6 +3,7 @@ name: TI-99/4A (Experimental)
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor for the TI-99/4A (TMS9900 CPU) — EXPERIMENTAL.

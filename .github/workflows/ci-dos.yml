@@ -3,6 +3,7 @@ name: DOS
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor and unit test binary for both DOS targets.

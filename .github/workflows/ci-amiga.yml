@@ -3,6 +3,7 @@ name: Amiga 68k
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor for the Commodore Amiga (68000 CPU, AmigaOS).

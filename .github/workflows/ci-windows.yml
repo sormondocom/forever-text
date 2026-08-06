@@ -3,6 +3,7 @@ name: Windows
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Cross-compiles the editor for Windows (x86-64) using MinGW-w64 running

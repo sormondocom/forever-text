@@ -3,6 +3,7 @@ name: POSIX Cross-Compile
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Compiles the editor for every POSIX/Unix cross-target and runs the
