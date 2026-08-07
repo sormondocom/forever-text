@@ -22,16 +22,16 @@ Each target family has its own pipeline so failures are immediately visible.
 
 | Pipeline | Status |
 |---|---|
-| Native Linux (x86-64) + feature proof | [![Native](https://github.com/sormond/forever-text/actions/workflows/ci-native.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-native.yml) |
-| Windows x86-64 + i686 (MinGW cross-compile) | [![Windows](https://github.com/sormond/forever-text/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-windows.yml) |
-| macOS ARM64 + x86-64 (Apple Clang, native) | [![macOS](https://github.com/sormond/forever-text/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-macos.yml) |
-| POSIX cross-compile + QEMU tests (10 arches) | [![POSIX](https://github.com/sormond/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-posix.yml) |
-| DOS 16-bit (ia16) + DOS 32-bit (DJGPP) | [![DOS](https://github.com/sormond/forever-text/actions/workflows/ci-dos.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-dos.yml) |
-| 6502: Commodore 64 / Atari 8-bit / Apple II | [![6502](https://github.com/sormond/forever-text/actions/workflows/ci-6502.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-6502.yml) |
-| Amiga 68k (amiga-gcc) | [![Amiga](https://github.com/sormond/forever-text/actions/workflows/ci-amiga.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-amiga.yml) |
-| Atari ST MiNT (m68k-atari-mint-gcc) | [![Atari ST](https://github.com/sormond/forever-text/actions/workflows/ci-atarist.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-atarist.yml) |
-| TRS-80 Model III Z80 (SDCC) | [![TRS-80](https://github.com/sormond/forever-text/actions/workflows/ci-trs80.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-trs80.yml) |
-| TI-99/4A TMS9900 (Experimental) | [![TI-99](https://github.com/sormond/forever-text/actions/workflows/ci-ti99.yml/badge.svg)](https://github.com/sormond/forever-text/actions/workflows/ci-ti99.yml) |
+| Native Linux (x86-64) + feature proof | [![Native](https://github.com/sormondocom/forever-text/actions/workflows/ci-native.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-native.yml) |
+| Windows x86-64 + i686 (MinGW cross-compile) | [![Windows](https://github.com/sormondocom/forever-text/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-windows.yml) |
+| macOS ARM64 + x86-64 (Apple Clang, native) | [![macOS](https://github.com/sormondocom/forever-text/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-macos.yml) |
+| POSIX cross-compile + QEMU tests (10 arches) | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| DOS 16-bit (ia16) + DOS 32-bit (DJGPP) | [![DOS](https://github.com/sormondocom/forever-text/actions/workflows/ci-dos.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-dos.yml) |
+| 6502: Commodore 64 / Atari 8-bit / Apple II | [![6502](https://github.com/sormondocom/forever-text/actions/workflows/ci-6502.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-6502.yml) |
+| Amiga 68k (amiga-gcc) | [![Amiga](https://github.com/sormondocom/forever-text/actions/workflows/ci-amiga.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-amiga.yml) |
+| Atari ST MiNT (m68k-atari-mint-gcc) | [![Atari ST](https://github.com/sormondocom/forever-text/actions/workflows/ci-atarist.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-atarist.yml) |
+| TRS-80 Model III Z80 (SDCC) | [![TRS-80](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml) |
+| TI-99/4A TMS9900 (Experimental) | [![TI-99](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml) |
 
 > **TI-99/4A** is marked experimental — `gcc-tms9900` builds from source in CI
 > and has no stable prebuilt release.  Its badge may be red without blocking
@@ -43,7 +43,7 @@ the source compiled cleanly on that commit.  To download them: click any badge
 above → select the most recent passing run → scroll to **Artifacts** at the
 bottom of the run page.
 
-[**→ Browse all workflow runs and artifacts**](https://github.com/sormond/forever-text/actions)
+[**→ Browse all workflow runs and artifacts**](https://github.com/sormondocom/forever-text/actions)
 
 ---
 
