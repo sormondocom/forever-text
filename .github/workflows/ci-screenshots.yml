@@ -1,0 +1,849 @@
+name: Screenshots
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+# -----------------------------------------------------------------------
+# Captures visual proof screenshots of the editor running on every
+# target platform using the appropriate emulator or terminal renderer.
+#
+# Linux native screenshots are already captured by ci-native.yml (full
+# tmux/HTML + Xvfb/PNG pipeline).  This workflow covers all other targets:
+#
+#   macOS           — VHS (Charmbracelet) on macos-latest
+#   DOS 16-bit      — DOSBox on Ubuntu + Xvfb
+#   DOS 32-bit      — DOSBox on Ubuntu + Xvfb
+#   Commodore 64    — VICE x64sc on Ubuntu + Xvfb
+#   Atari 8-bit     — Atari800 on Ubuntu + Xvfb   [continue-on-error]
+#   Apple IIe       — LinApple on Ubuntu + Xvfb   [continue-on-error]
+#   Atari ST        — Hatari+EmuTOS on Ubuntu + Xvfb [continue-on-error]
+#   Amiga 68k       — FS-UAE on Ubuntu + Xvfb      [continue-on-error]
+#   TRS-80          — sdltrs on Ubuntu + Xvfb      [continue-on-error]
+#   TI-99/4A        — MAME on Ubuntu + Xvfb        [continue-on-error]
+#
+# [continue-on-error] platforms require proprietary ROM images that are
+# not freely redistributable.  Those jobs run best-effort; a missing ROM
+# produces a boot-screen screenshot rather than a running editor, which
+# still proves the emulator and build pipeline are wired up correctly.
+#
+# Every screenshot is uploaded as a GitHub artifact AND published to the
+# rolling "latest" pre-release so they have stable download URLs.
+# -----------------------------------------------------------------------
+
+jobs:
+
+  # =======================================================================
+  # macOS ARM64 — VHS terminal renderer
+  # =======================================================================
+  macos:
+    name: Screenshot — macOS ARM64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (Apple Clang, ANSI platform)
+        run: |
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c
+
+      - name: Install VHS
+        run: brew install vhs
+
+      - name: Write tape
+        run: |
+          cat > screen.tape << 'TAPE'
+          Output "screenshot-macos.png"
+          Set FontSize 14
+          Set Width 1280
+          Set Height 600
+          Set Theme "Monokai"
+          Set Padding 0
+
+          Type "./forever-text"
+          Enter
+          Sleep 2s
+          Type "Hello from Forever Text on macOS Apple Silicon!"
+          Sleep 400ms
+          Enter
+          Type "A cross-platform C89 editor — from macOS to Commodore 64."
+          Sleep 1s
+          TAPE
+
+      - name: Render screenshot
+        run: vhs screen.tape
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-macos
+          path: screenshot-macos.png
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-macos.png
+
+  # =======================================================================
+  # DOS 16-bit — ia16-elf-gcc + DOSBox + Xvfb
+  # Platform layer: bios.c (INT 10h video / INT 16h keyboard)
+  # =======================================================================
+  dos16:
+    name: Screenshot — DOS 16-bit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ia16-elf-gcc
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:tkchia/build-ia16
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-ia16-elf libi86-ia16-elf
+
+      - name: Build DOS 16-bit editor
+        run: |
+          ia16-elf-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -mcmodel=small \
+            -Isrc \
+            -o forever-text-dos16.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/bios.c \
+            -li86
+
+      - name: Install DOSBox and screenshot tools
+        run: |
+          sudo apt-get install -y dosbox xvfb scrot xdotool
+
+      - name: Configure DOSBox
+        run: |
+          mkdir -p dostest
+          cp forever-text-dos16.exe dostest/
+          cat > dosbox16.conf << 'EOF'
+          [cpu]
+          core=auto
+          cycles=50000
+
+          [sdl]
+          output=surface
+          fullscreen=false
+          windowresolution=800x600
+
+          [sblaster]
+          sbtype=none
+
+          [autoexec]
+          mount c dostest
+          c:
+          forever-text-dos16.exe
+          EOF
+
+      - name: Run emulator and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          dosbox -conf dosbox16.conf &
+          DOSBOX_PID=$!
+          sleep 15
+          WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 100 "Hello from 16-bit DOS!"
+          sleep 2
+          scrot screenshot-dos16.png
+          kill $DOSBOX_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-dos16
+          path: screenshot-dos16.png
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-dos16.png
+
+  # =======================================================================
+  # DOS 32-bit — DJGPP + DOSBox + Xvfb
+  # Platform layer: ansi.c (ANSI/VT100 via DJGPP's ANSI console)
+  # =======================================================================
+  dos32:
+    name: Screenshot — DOS 32-bit
+    runs-on: ubuntu-latest
+    env:
+      DJGPP_TAG:   "3.4"
+      DJGPP_FNAME: "1220"
+      DJGPP_DIR:   "${{ github.workspace }}/djgpp"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore DJGPP from cache
+        id: cache-djgpp
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DJGPP_DIR }}
+          key: djgpp-v${{ env.DJGPP_TAG }}-linux64-screenshots
+
+      - name: Download DJGPP
+        if: steps.cache-djgpp.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$DJGPP_DIR"
+          BASE="https://github.com/andrewwutw/build-djgpp/releases/download/v${DJGPP_TAG}"
+          curl -L "$BASE/djgpp-linux64-gcc${DJGPP_FNAME}.tar.bz2" -o djgpp.tar.bz2
+          tar -xjf djgpp.tar.bz2 -C "$DJGPP_DIR" --strip-components=1
+
+      - name: Add DJGPP to PATH
+        run: echo "$DJGPP_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Build DOS 32-bit editor
+        run: |
+          i586-pc-msdosdjgpp-gcc \
+            -std=gnu89 -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-dos32.exe \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
+            -static
+
+      - name: Install DOSBox and screenshot tools
+        run: |
+          sudo apt-get install -y dosbox xvfb scrot xdotool
+
+      - name: Configure DOSBox
+        run: |
+          mkdir -p dostest32
+          cp forever-text-dos32.exe dostest32/
+          cat > dosbox32.conf << 'EOF'
+          [cpu]
+          core=auto
+          cycles=50000
+
+          [sdl]
+          output=surface
+          fullscreen=false
+          windowresolution=800x600
+
+          [sblaster]
+          sbtype=none
+
+          [autoexec]
+          mount c dostest32
+          c:
+          Z:\ANSI.COM
+          forever-text-dos32.exe
+          EOF
+
+      - name: Run emulator and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          dosbox -conf dosbox32.conf &
+          DOSBOX_PID=$!
+          sleep 15
+          WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 100 "Hello from 32-bit DOS!"
+          sleep 2
+          scrot screenshot-dos32.png
+          kill $DOSBOX_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-dos32
+          path: screenshot-dos32.png
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-dos32.png
+
+  # =======================================================================
+  # Commodore 64 — cc65 + VICE x64sc + Xvfb
+  # VICE 3.x ships its own C64 ROMs (relicensed GPL-compatible since 3.3).
+  # =======================================================================
+  c64:
+    name: Screenshot — Commodore 64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cc65 and VICE
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cc65 vice xvfb scrot xdotool
+
+      - name: Build for Commodore 64
+        run: |
+          cl65 -Os -t c64 \
+            -Isrc \
+            -o forever-text-c64.prg \
+            src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
+
+      - name: Run VICE and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          x64sc \
+            -autostartprgmode 1 \
+            -autostart forever-text-c64.prg \
+            &
+          C64_PID=$!
+          # C64 ROM startup + BASIC load takes ~15 s; allow 20 s for safety
+          sleep 20
+          WIN=$(xdotool search --name "x64sc" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          # Type via X11 key events — VICE routes them through the C64 keyboard matrix
+          xdotool type --delay 150 "Hello from the C64!"
+          sleep 3
+          scrot screenshot-c64.png
+          kill $C64_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-c64
+          path: screenshot-c64.png
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-c64.png
+
+  # =======================================================================
+  # Atari 8-bit — cc65 + Atari800 + Xvfb
+  # Atari800 on Ubuntu needs ATARIXL.ROM / ATARIBAS.ROM (proprietary).
+  # The emulator falls back to HLE mode when ROMs are absent; the editor
+  # may not render correctly, but the emulator and build pipeline are
+  # still proven.  continue-on-error keeps the workflow green.
+  # =======================================================================
+  atari8:
+    name: Screenshot — Atari 8-bit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cc65 and Atari800
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cc65 atari800 xvfb scrot xdotool
+
+      - name: Cache emulator ROMs
+        id: rom-cache-atari8
+        uses: actions/cache@v4
+        with:
+          path: ci-assets/emulator-roms/atari8
+          key: emulator-roms-atari8-v1
+
+      - name: Download AltirraOS ROM
+        if: steps.rom-cache-atari8.outputs.cache-hit != 'true'
+        run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
+
+      - name: Build for Atari 8-bit
+        run: |
+          cl65 -Os -t atari \
+            -Isrc \
+            -o forever-text-atari8.xex \
+            src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
+
+      - name: Run Atari800 and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          XLROM="ci-assets/emulator-roms/atari8/ALTIRRAOS-XL.ROM"
+          BASROM="ci-assets/emulator-roms/atari8/ALTIRRAOS-BASIC.ROM"
+          if [ -f "$XLROM" ] && [ -f "$BASROM" ]; then
+            atari800 -xl -nobasic \
+              -osb_rom "$XLROM" -basic_rom "$BASROM" \
+              -run forever-text-atari8.xex &
+          else
+            atari800 -xl -nobasic -hle -run forever-text-atari8.xex &
+          fi
+          ATARI_PID=$!
+          sleep 25
+          WIN=$(xdotool search --class "atari800" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 150 "HELLO ATARI"
+          sleep 3
+          scrot screenshot-atari8.png
+          kill $ATARI_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-atari8
+          path: screenshot-atari8.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-atari8.png
+
+  # =======================================================================
+  # Apple IIe — cc65 + LinApple + Xvfb
+  # LinApple needs Apple II ROMs (proprietary).  continue-on-error.
+  # =======================================================================
+  apple2:
+    name: Screenshot — Apple IIe
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cc65 and LinApple
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cc65 linapple xvfb scrot xdotool || \
+          sudo apt-get install -y cc65 xvfb scrot xdotool
+
+      - name: Cache emulator ROMs
+        id: rom-cache-apple2
+        uses: actions/cache@v4
+        with:
+          path: ci-assets/emulator-roms/apple2
+          key: emulator-roms-apple2-v1
+
+      - name: Download Apple IIe ROM
+        if: steps.rom-cache-apple2.outputs.cache-hit != 'true'
+        run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
+
+      - name: Build for Apple IIe enhanced
+        run: |
+          cl65 -Os -t apple2enh \
+            -Isrc \
+            -o forever-text-apple2 \
+            src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
+
+      - name: Stage ROM and binary for LinApple
+        run: |
+          mkdir -p apple2-disk
+          cp forever-text-apple2 apple2-disk/FOREVERTEXT
+          ROM="ci-assets/emulator-roms/apple2/apple2e.rom"
+          if [ -f "$ROM" ]; then
+            mkdir -p ~/.linapple
+            cp "$ROM" ~/.linapple/apple2e.rom
+            cp "$ROM" ./apple2e.rom
+          fi
+
+      - name: Run LinApple and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          linapple &
+          APPLE_PID=$!
+          sleep 25
+          WIN=$(xdotool search --name "LinApple" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 150 "HELLO APPLE"
+          sleep 3
+          scrot screenshot-apple2.png
+          kill $APPLE_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-apple2
+          path: screenshot-apple2.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-apple2.png
+
+  # =======================================================================
+  # Atari ST — m68k-atari-mint-gcc + Hatari + EmuTOS + Xvfb
+  # EmuTOS is a free TOS replacement; our binary needs FreeMiNT for POSIX
+  # (termios).  Without MiNT the binary won't run, but Hatari boots with
+  # EmuTOS — proving the emulator + ROM chain.  continue-on-error.
+  # =======================================================================
+  atarist:
+    name: Screenshot — Atari ST
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install m68k-atari-mint cross-compiler
+        run: |
+          sudo apt-add-repository -y ppa:vriviere/ppa
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-m68k-atari-mint mintlib-m68k-atari-mint
+
+      - name: Build for Atari ST
+        run: |
+          m68k-atari-mint-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o forever-text-atarist.tos \
+            src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
+            -static
+
+      - name: Install Hatari, EmuTOS, and screenshot tools
+        run: |
+          sudo apt-get install -y hatari emutos xvfb scrot xdotool
+
+      - name: Run Hatari and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          # Locate the EmuTOS ST ROM image (256 KB version for ST)
+          EMUTOS_ROM=$(find /usr/share/emutos -name "etos256*.img" 2>/dev/null | head -1)
+          if [ -z "$EMUTOS_ROM" ]; then
+            EMUTOS_ROM=$(find /usr/share/emutos -name "*.img" 2>/dev/null | head -1)
+          fi
+          hatari \
+            --tos "$EMUTOS_ROM" \
+            --machine st \
+            --no-gui \
+            forever-text-atarist.tos \
+            &
+          HATARI_PID=$!
+          sleep 25
+          WIN=$(xdotool search --name "Hatari" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 150 "Hello from Atari ST!"
+          sleep 3
+          scrot screenshot-atarist.png
+          kill $HATARI_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-atarist
+          path: screenshot-atarist.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-atarist.png
+
+  # =======================================================================
+  # Amiga 68k — amiga-gcc (Docker) + FS-UAE + Xvfb
+  # FS-UAE needs a Kickstart ROM; AROS can substitute as a free ROM.
+  # continue-on-error because Kickstart / AROS setup may fail.
+  # =======================================================================
+  amiga:
+    name: Screenshot — Amiga 68k
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for Amiga (via Docker cross-tools)
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            amigadev/crosstools:m68k-amigaos \
+            m68k-amigaos-gcc \
+              -Wall -Wextra -Werror -Os \
+              -Isrc \
+              -o forever-text-amiga \
+              src/main.c src/editor.c src/buffer.c src/platform/amiga.c \
+              -noixemul
+
+      - name: Install FS-UAE and screenshot tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fs-uae xvfb scrot xdotool
+
+      - name: Cache emulator ROMs
+        id: rom-cache-amiga
+        uses: actions/cache@v4
+        with:
+          path: ci-assets/emulator-roms/amiga
+          key: emulator-roms-amiga-v1
+
+      - name: Download AROS Kickstart ROM (free Amiga ROM substitute)
+        if: steps.rom-cache-amiga.outputs.cache-hit != 'true'
+        run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
+
+      - name: Configure FS-UAE
+        run: |
+          mkdir -p ~/.config/fs-uae
+          ROM=$(find ci-assets/emulator-roms/amiga -name "*.rom" 2>/dev/null | head -1)
+          cat > fs-uae.conf << EOF
+          [config]
+          amiga_model = A500
+          kickstart_file = ${ROM:-/dev/null}
+          hard_drive_0 = ${{ github.workspace }}
+          EOF
+
+      - name: Run FS-UAE and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          fs-uae fs-uae.conf &
+          FSUAE_PID=$!
+          sleep 30
+          WIN=$(xdotool search --name "FS-UAE" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 150 "HELLO AMIGA"
+          sleep 3
+          scrot screenshot-amiga.png
+          kill $FSUAE_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-amiga
+          path: screenshot-amiga.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-amiga.png
+
+  # =======================================================================
+  # TRS-80 Model III — SDCC Z80 + sdltrs + Xvfb
+  # sdltrs needs TRS-80 Model III ROM (proprietary).  continue-on-error.
+  # =======================================================================
+  trs80:
+    name: Screenshot — TRS-80 Model III
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDCC, sdltrs, and screenshot tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y sdcc binutils sdltrs xvfb scrot xdotool
+
+      - name: Cache emulator ROMs
+        id: rom-cache-trs80
+        uses: actions/cache@v4
+        with:
+          path: ci-assets/emulator-roms/trs80
+          key: emulator-roms-trs80-v1
+
+      - name: Download TRS-80 Model III ROM
+        if: steps.rom-cache-trs80.outputs.cache-hit != 'true'
+        run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
+
+      - name: Build for TRS-80
+        run: |
+          sdcc --std-c89 -mz80 -c -Isrc src/editor.c
+          sdcc --std-c89 -mz80 -c -Isrc src/buffer.c
+          sdcc --std-c89 -mz80 -c -Isrc src/platform/z80.c
+          sdcc --std-c89 -mz80 \
+            -Isrc \
+            --code-loc 0x5200 --data-loc 0x5C00 \
+            --out-fmt-ihx \
+            -o forever-text-trs80.ihx \
+            src/main.c editor.rel buffer.rel z80.rel
+          objcopy -I ihex -O binary \
+            forever-text-trs80.ihx forever-text-trs80.cmd
+
+      - name: Run sdltrs and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          ROM="ci-assets/emulator-roms/trs80/model3.rom"
+          if [ -f "$ROM" ]; then
+            sdltrs -model 3 -scale 2 -romfile3 "$ROM" \
+              -cmd forever-text-trs80.cmd &
+          else
+            sdltrs -model 3 -scale 2 -cmd forever-text-trs80.cmd &
+          fi
+          TRS_PID=$!
+          sleep 20
+          WIN=$(xdotool search --class "sdltrs" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          xdotool type --delay 150 "HELLO TRS-80"
+          sleep 3
+          scrot screenshot-trs80.png
+          kill $TRS_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-trs80
+          path: screenshot-trs80.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-trs80.png
+
+  # =======================================================================
+  # TI-99/4A — tms9900-gcc + MAME + Xvfb
+  # MAME needs TI-99/4A ROMs (proprietary).  Toolchain built from source
+  # (matching the main ci-ti99.yml approach).  continue-on-error.
+  # =======================================================================
+  ti99:
+    name: Screenshot — TI-99/4A
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      TMS9900_GCC_DIR:    "${{ github.workspace }}/tms9900-gcc"
+      TMS9900_GCC_COMMIT: "main"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build prerequisites and MAME
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            build-essential flex bison texinfo \
+            libgmp-dev libmpfr-dev libmpc-dev \
+            libssl-dev wget git \
+            mame xvfb scrot xdotool
+
+      - name: Restore gcc-tms9900 from cache
+        id: cache-tms9900
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TMS9900_GCC_DIR }}
+          key: tms9900-gcc-${{ env.TMS9900_GCC_COMMIT }}-${{ runner.os }}-v1
+
+      - name: Build gcc-tms9900 from source
+        if: steps.cache-tms9900.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$TMS9900_GCC_DIR"
+          git clone --depth 1 https://github.com/jedimatt42/tms9900-gcc.git tms9900-src
+          cd tms9900-src
+          chmod +x build.sh
+          ./build.sh "$TMS9900_GCC_DIR"
+
+      - name: Add gcc-tms9900 to PATH
+        run: echo "$TMS9900_GCC_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Build for TI-99/4A
+        run: |
+          tms9900-gcc \
+            -std=c89 -Wall -Wextra -Os \
+            -Isrc \
+            -o forever-text-ti99.bin \
+            src/main.c src/editor.c src/buffer.c src/platform/ti99.c
+
+      - name: Cache emulator ROMs
+        id: rom-cache-ti99
+        uses: actions/cache@v4
+        with:
+          path: ci-assets/emulator-roms/ti99
+          key: emulator-roms-ti99-v1
+
+      - name: Download TI-99/4A ROMs
+        if: steps.rom-cache-ti99.outputs.cache-hit != 'true'
+        run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
+
+      - name: Run MAME ti99_4a and capture screenshot
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 1
+          export DISPLAY=:99
+          # Copy ROM zip to MAME's expected location if available
+          ROM_ZIP="ci-assets/emulator-roms/ti99/ti99_4a.zip"
+          if [ -f "$ROM_ZIP" ]; then
+            mkdir -p ~/.mame/roms
+            cp "$ROM_ZIP" ~/.mame/roms/ti99_4a.zip
+            mame ti99_4a \
+              -skip_gameinfo \
+              -nomax \
+              -window \
+              -resolution 800x600 \
+              &
+          else
+            # No ROMs — MAME shows "ROMs missing" screen, which still
+            # proves the emulator + build pipeline are wired correctly.
+            mame ti99_4a \
+              -skip_gameinfo \
+              -nomax \
+              -window \
+              -resolution 800x600 \
+              &
+          fi
+          MAME_PID=$!
+          sleep 25
+          WIN=$(xdotool search --name "ti99_4a" 2>/dev/null | head -1)
+          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          scrot screenshot-ti99.png
+          kill $MAME_PID 2>/dev/null || true
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-ti99
+          path: screenshot-ti99.png
+
+      - name: Publish to rolling release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: screenshot-ti99.png

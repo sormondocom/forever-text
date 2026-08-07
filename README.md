@@ -353,6 +353,12 @@ make                      # auto-detects Unix host
 ./forever-text [filename] # run the editor
 ```
 
+**Latest CI screenshots** *(updated on every push to `main`)*:
+
+| Linux x86-64 | macOS Apple Silicon |
+|---|---|
+| [![Linux](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png) | [![macOS](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png) |
+
 #### Quirks & notes
 
 `ansi.c` puts the terminal into raw mode using POSIX `termios`: `ECHO` and
@@ -804,6 +810,10 @@ make dos16
 
 Load in DOSBox, DOSBox-X, or real DOS hardware.
 
+**Latest CI screenshot** *(updated on every push to `main`)*:
+
+[![DOS 16-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png)
+
 #### Quirks & notes
 
 16-bit real-mode DOS addresses memory in 64 KB segments.  The small memory
@@ -857,6 +867,10 @@ make dos32
 
 Requires a DPMI host (CWSDPMI, HDPMI32). DOSBox bundles one automatically.
 
+**Latest CI screenshot** *(updated on every push to `main`)*:
+
+[![DOS 32-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png)
+
 #### Quirks & notes
 
 DJGPP (DJ's GNU Programming Platform) produces 32-bit protected-mode DOS
@@ -903,6 +917,10 @@ make c64
 ```
 
 Load with `LOAD"*",8,1` on real hardware or in VICE.
+
+**Latest CI screenshot** *(updated on every push to `main`)*:
+
+[![Commodore 64](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png)
 
 #### Quirks & notes
 
@@ -952,6 +970,10 @@ make atari8
 
 Load `forever-text-atari8.xex` in Atari800 or on real hardware.
 
+**Latest CI screenshot** *(best-effort — uses AltirraOS or HLE mode)*:
+
+[![Atari 8-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png)
+
 #### Quirks & notes
 
 The Atari 400/800/XL/XE series uses the MOS 6502C at 1.79 MHz.  The XL/XE
@@ -992,6 +1014,10 @@ make apple2
 ```
 
 Load in AppleWin or linapple.
+
+**Latest CI screenshot** *(best-effort — requires Apple IIe ROM)*:
+
+[![Apple IIe](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png)
 
 #### Quirks & notes
 
@@ -1050,6 +1076,10 @@ make amiga
 
 Produces an AmigaOS HUNK executable. Run in FS-UAE or WinUAE.
 
+**Latest CI screenshot** *(best-effort — uses AROS free Kickstart ROM)*:
+
+[![Amiga 68k](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png)
+
 #### Quirks & notes
 
 AmigaOS uses a proprietary shared library system (`exec.library`,
@@ -1097,6 +1127,10 @@ make atarist
 ```
 
 Produces a `.TOS` executable. Run in Hatari or ARAnyM.
+
+**Latest CI screenshot** *(updated on every push to `main` — uses EmuTOS free ROM)*:
+
+[![Atari ST](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png)
 
 #### Quirks & notes
 
@@ -1152,6 +1186,10 @@ make trs80
 ```
 
 Load `forever-text-trs80.cmd` in sdltrs or trs80gp.
+
+**Latest CI screenshot** *(best-effort — requires TRS-80 Model III ROM)*:
+
+[![TRS-80 Model III](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png)
 
 #### Quirks & notes
 
@@ -1223,6 +1261,10 @@ make ti99
 ```
 
 Load in Classic99, MAME (`-cart forever-text-ti99.out`), or js99er.
+
+**Latest CI screenshot** *(best-effort — requires TI-99/4A ROM set)*:
+
+[![TI-99/4A](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png)
 
 #### Quirks & notes
 
