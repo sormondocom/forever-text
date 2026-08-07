@@ -199,9 +199,12 @@ jobs:
           echo "All 74 tests PASSED on DOS 16-bit (8086 real mode)"
 
       - name: Run editor in DOSBox and capture screenshot
+        # Uses DOSBox's built-in Ctrl+F5 screenshot (captures the DOS display
+        # directly — no window chrome, authentic CGA/VGA resolution).
+        # DOSBox saves captures to the directory set in [paths] captures=.
         run: |
           export DISPLAY=:99
-          mkdir -p dostest
+          mkdir -p dostest dosbox-capture16
           cp forever-text-dos16.exe dostest/
           cat > dosbox16.conf << 'EOF'
           [cpu]
@@ -216,6 +219,9 @@ jobs:
           [sblaster]
           sbtype=none
 
+          [paths]
+          captures=dosbox-capture16
+
           [autoexec]
           mount c dostest
           c:
@@ -225,11 +231,29 @@ jobs:
           dosbox -conf dosbox16.conf &
           DOSBOX_PID=$!
           sleep 15
+
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 100 "74/74 tests passed — Hello from 16-bit DOS!"
+
+          # Type text so the screenshot shows real editor content
+          xdotool type --delay 120 "74/74 tests passed -- Hello from 16-bit DOS!"
+          sleep 1
+
+          # Trigger DOSBox internal screenshot (Ctrl+F5) — saves to dosbox-capture16/
+          xdotool key ctrl+F5
           sleep 2
-          scrot screenshot-dos16.png
+
+          # Locate and rename the captured PNG
+          SHOT=$(ls -t dosbox-capture16/*.png 2>/dev/null | head -1)
+          if [ -n "$SHOT" ]; then
+            cp "$SHOT" screenshot-dos16.png
+            echo "Internal DOSBox screenshot saved: $SHOT"
+          else
+            # Fallback: host-side capture of the DOSBox window
+            echo "No internal capture found; falling back to scrot"
+            scrot -u screenshot-dos16.png
+          fi
+
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
@@ -349,9 +373,10 @@ jobs:
           echo "All 74 tests PASSED on DOS 32-bit (386 protected mode)"
 
       - name: Run editor in DOSBox and capture screenshot
+        # Same internal Ctrl+F5 approach as DOS 16-bit.
         run: |
           export DISPLAY=:99
-          mkdir -p dostest32
+          mkdir -p dostest32 dosbox-capture32
           cp forever-text-dos32.exe dostest32/
           cat > dosbox32.conf << 'EOF'
           [cpu]
@@ -366,6 +391,9 @@ jobs:
           [sblaster]
           sbtype=none
 
+          [paths]
+          captures=dosbox-capture32
+
           [autoexec]
           mount c dostest32
           c:
@@ -376,11 +404,26 @@ jobs:
           dosbox -conf dosbox32.conf &
           DOSBOX_PID=$!
           sleep 15
+
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 100 "74/74 tests passed — Hello from 32-bit DOS!"
+
+          xdotool type --delay 120 "74/74 tests passed -- Hello from 32-bit DOS!"
+          sleep 1
+
+          # Trigger DOSBox internal screenshot (Ctrl+F5)
+          xdotool key ctrl+F5
           sleep 2
-          scrot screenshot-dos32.png
+
+          SHOT=$(ls -t dosbox-capture32/*.png 2>/dev/null | head -1)
+          if [ -n "$SHOT" ]; then
+            cp "$SHOT" screenshot-dos32.png
+            echo "Internal DOSBox screenshot saved: $SHOT"
+          else
+            echo "No internal capture found; falling back to scrot"
+            scrot -u screenshot-dos32.png
+          fi
+
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
@@ -420,7 +463,7 @@ jobs:
       - name: Install cc65 and VICE
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cc65 vice xvfb scrot xdotool
+          sudo apt-get install -y cc65 vice xvfb scrot xdotool imagemagick
 
       - name: Build for Commodore 64
         run: |
@@ -439,14 +482,20 @@ jobs:
             -autostart forever-text-c64.prg \
             &
           C64_PID=$!
-          # C64 ROM startup + BASIC load takes ~15 s; allow 20 s for safety
-          sleep 20
-          WIN=$(xdotool search --name "x64sc" 2>/dev/null | head -1)
+          # C64 ROM startup + BASIC load takes ~15 s; allow 30 s for safety
+          sleep 30
+          WIN=$(xdotool search --class "x64sc" 2>/dev/null | head -1 || \
+                xdotool search --name "x64sc" 2>/dev/null | head -1 || \
+                xdotool search --name "VICE" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           # Type via X11 key events — VICE routes them through the C64 keyboard matrix
           xdotool type --delay 150 "Hello from the C64!"
           sleep 3
-          scrot screenshot-c64.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-c64.png 2>/dev/null || scrot -u screenshot-c64.png
+          else
+            scrot screenshot-c64.png
+          fi
           kill $C64_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -482,7 +531,7 @@ jobs:
       - name: Install cc65 and Atari800
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cc65 atari800 xvfb scrot xdotool
+          sudo apt-get install -y cc65 atari800 xvfb scrot xdotool imagemagick
 
       - name: Cache emulator ROMs
         id: rom-cache-atari8
@@ -518,11 +567,16 @@ jobs:
           fi
           ATARI_PID=$!
           sleep 25
-          WIN=$(xdotool search --class "atari800" 2>/dev/null | head -1)
+          WIN=$(xdotool search --class "atari800" 2>/dev/null | head -1 || \
+                xdotool search --name "Atari800" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           xdotool type --delay 150 "HELLO ATARI"
           sleep 3
-          scrot screenshot-atari8.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-atari8.png 2>/dev/null || scrot -u screenshot-atari8.png
+          else
+            scrot screenshot-atari8.png
+          fi
           kill $ATARI_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -557,8 +611,8 @@ jobs:
       - name: Install cc65 and LinApple
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cc65 linapple xvfb scrot xdotool || \
-          sudo apt-get install -y cc65 xvfb scrot xdotool
+          sudo apt-get install -y cc65 linapple xvfb scrot xdotool imagemagick || \
+          sudo apt-get install -y cc65 xvfb scrot xdotool imagemagick
 
       - name: Cache emulator ROMs
         id: rom-cache-apple2
@@ -597,11 +651,16 @@ jobs:
           linapple &
           APPLE_PID=$!
           sleep 25
-          WIN=$(xdotool search --name "LinApple" 2>/dev/null | head -1)
+          WIN=$(xdotool search --name "LinApple" 2>/dev/null | head -1 || \
+                xdotool search --class "linapple" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           xdotool type --delay 150 "HELLO APPLE"
           sleep 3
-          scrot screenshot-apple2.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-apple2.png 2>/dev/null || scrot -u screenshot-apple2.png
+          else
+            scrot screenshot-apple2.png
+          fi
           kill $APPLE_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -652,7 +711,7 @@ jobs:
 
       - name: Install Hatari, EmuTOS, and screenshot tools
         run: |
-          sudo apt-get install -y hatari emutos xvfb scrot xdotool
+          sudo apt-get install -y hatari emutos xvfb scrot xdotool imagemagick
 
       - name: Run Hatari and capture screenshot
         run: |
@@ -671,12 +730,17 @@ jobs:
             forever-text-atarist.tos \
             &
           HATARI_PID=$!
-          sleep 25
-          WIN=$(xdotool search --name "Hatari" 2>/dev/null | head -1)
+          sleep 40
+          WIN=$(xdotool search --class "hatari" 2>/dev/null | head -1 || \
+                xdotool search --name "Hatari" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           xdotool type --delay 150 "Hello from Atari ST!"
           sleep 3
-          scrot screenshot-atarist.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-atarist.png 2>/dev/null || scrot -u screenshot-atarist.png
+          else
+            scrot screenshot-atarist.png
+          fi
           kill $HATARI_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -725,7 +789,7 @@ jobs:
       - name: Install FS-UAE and screenshot tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y fs-uae xvfb scrot xdotool
+          sudo apt-get install -y fs-uae xvfb scrot xdotool imagemagick
 
       - name: Cache emulator ROMs
         id: rom-cache-amiga
@@ -742,10 +806,11 @@ jobs:
         run: |
           mkdir -p ~/.config/fs-uae
           ROM=$(find ci-assets/emulator-roms/amiga -name "*.rom" 2>/dev/null | head -1)
+          KICK="${ROM:-:aros}"
           cat > fs-uae.conf << EOF
           [config]
           amiga_model = A500
-          kickstart_file = ${ROM:-/dev/null}
+          kickstart_file = $KICK
           hard_drive_0 = ${{ github.workspace }}
           EOF
 
@@ -757,11 +822,16 @@ jobs:
           fs-uae fs-uae.conf &
           FSUAE_PID=$!
           sleep 30
-          WIN=$(xdotool search --name "FS-UAE" 2>/dev/null | head -1)
+          WIN=$(xdotool search --class "fs-uae" 2>/dev/null | head -1 || \
+                xdotool search --name "FS-UAE" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           xdotool type --delay 150 "HELLO AMIGA"
           sleep 3
-          scrot screenshot-amiga.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-amiga.png 2>/dev/null || scrot -u screenshot-amiga.png
+          else
+            scrot screenshot-amiga.png
+          fi
           kill $FSUAE_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -796,7 +866,7 @@ jobs:
       - name: Install SDCC, sdltrs, and screenshot tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y sdcc binutils sdltrs xvfb scrot xdotool
+          sudo apt-get install -y sdcc binutils sdltrs xvfb scrot xdotool imagemagick
 
       - name: Cache emulator ROMs
         id: rom-cache-trs80
@@ -837,11 +907,17 @@ jobs:
           fi
           TRS_PID=$!
           sleep 20
-          WIN=$(xdotool search --class "sdltrs" 2>/dev/null | head -1)
+          WIN=$(xdotool search --class "sdltrs" 2>/dev/null | head -1 || \
+                xdotool search --name "sdltrs" 2>/dev/null | head -1 || \
+                xdotool search --name "TRS-80" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           xdotool type --delay 150 "HELLO TRS-80"
           sleep 3
-          scrot screenshot-trs80.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-trs80.png 2>/dev/null || scrot -u screenshot-trs80.png
+          else
+            scrot screenshot-trs80.png
+          fi
           kill $TRS_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -884,7 +960,7 @@ jobs:
             build-essential flex bison texinfo \
             libgmp-dev libmpfr-dev libmpc-dev \
             libssl-dev wget git \
-            mame xvfb scrot xdotool
+            mame xvfb scrot xdotool imagemagick
 
       - name: Restore gcc-tms9900 from cache
         id: cache-tms9900
@@ -952,9 +1028,16 @@ jobs:
           fi
           MAME_PID=$!
           sleep 25
-          WIN=$(xdotool search --name "ti99_4a" 2>/dev/null | head -1)
+          WIN=$(xdotool search --class "mame" 2>/dev/null | head -1 || \
+                xdotool search --class "mame64" 2>/dev/null | head -1 || \
+                xdotool search --name "MAME" 2>/dev/null | head -1 || \
+                xdotool search --name "ti99" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          scrot screenshot-ti99.png
+          if [ -n "$WIN" ]; then
+            import -window "$WIN" screenshot-ti99.png 2>/dev/null || scrot -u screenshot-ti99.png
+          else
+            scrot screenshot-ti99.png
+          fi
           kill $MAME_PID 2>/dev/null || true
 
       - name: Upload artifact
