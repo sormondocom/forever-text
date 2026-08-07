@@ -11,10 +11,10 @@
 #include "editor.h"
 #include "platform/platform.h"
 
+static FtEditor ed;
+
 int main(int argc, char *argv[])
 {
-    FtEditor ed;
-
     platform_init();
     ft_editor_init(&ed);
 

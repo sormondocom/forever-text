@@ -34,7 +34,7 @@ jobs:
             -w /src \
             amigadev/crosstools:m68k-amigaos \
             m68k-amigaos-gcc \
-              -std=c89 -Wall -Wextra -Werror -Os \
+              -Wall -Wextra -Werror -Os \
               -Isrc \
               -o forever-text-amiga \
               src/main.c src/editor.c src/buffer.c src/platform/amiga.c \
