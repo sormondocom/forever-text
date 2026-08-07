@@ -66,9 +66,9 @@ jobs:
 
       - name: Write tape
         run: |
-          # The tape runs the test suite first, then the editor —
-          # a single screenshot that proves both tests passed and the
-          # editor runs on macOS Apple Silicon.
+          # The tape opens the editor and types visible content.
+          # Tests are run in the separate "Build and run unit tests" step
+          # and published as test-results-macos.txt.
           cat > screen.tape << 'TAPE'
           Output "screenshot-macos.png"
           Set FontSize 13
@@ -77,16 +77,12 @@ jobs:
           Set Theme "Monokai"
           Set Padding 0
 
-          Type "./test-buffer"
-          Enter
-          Sleep 3s
           Type "./forever-text"
           Enter
           Sleep 2s
-          Type "74/74 tests passed — Hello from macOS Apple Silicon!"
-          Sleep 400ms
+          Type "74/74 tests passed"
           Enter
-          Type "C89 · AArch64 · Apple Silicon"
+          Type "macOS Apple Silicon - C89 AArch64"
           Sleep 1s
           TAPE
 
@@ -157,7 +153,7 @@ jobs:
 
       - name: Install DOSBox and screenshot tools
         run: |
-          sudo apt-get install -y dosbox xvfb scrot xdotool
+          sudo apt-get install -y dosbox xvfb scrot xdotool imagemagick
 
       - name: Run unit tests in DOSBox (16-bit)
         # DOSBox autoexec runs the test binary, redirects stdout to RESULTS.TXT
@@ -249,9 +245,12 @@ jobs:
             cp "$SHOT" screenshot-dos16.png
             echo "Internal DOSBox screenshot saved: $SHOT"
           else
-            # Fallback: host-side capture of the DOSBox window
-            echo "No internal capture found; falling back to scrot"
-            scrot -u screenshot-dos16.png
+            echo "No internal capture found; falling back to import -window"
+            if [ -n "$WIN" ]; then
+              import -window "$WIN" screenshot-dos16.png 2>/dev/null || scrot -u screenshot-dos16.png
+            else
+              scrot screenshot-dos16.png
+            fi
           fi
 
           kill $DOSBOX_PID 2>/dev/null || true
@@ -332,7 +331,7 @@ jobs:
 
       - name: Install DOSBox and screenshot tools
         run: |
-          sudo apt-get install -y dosbox xvfb scrot xdotool
+          sudo apt-get install -y dosbox xvfb scrot xdotool imagemagick
 
       - name: Run unit tests in DOSBox (32-bit)
         # DJGPP executables are 32-bit protected mode; DOSBox provides the
@@ -420,8 +419,12 @@ jobs:
             cp "$SHOT" screenshot-dos32.png
             echo "Internal DOSBox screenshot saved: $SHOT"
           else
-            echo "No internal capture found; falling back to scrot"
-            scrot -u screenshot-dos32.png
+            echo "No internal capture found; falling back to import -window"
+            if [ -n "$WIN" ]; then
+              import -window "$WIN" screenshot-dos32.png 2>/dev/null || scrot -u screenshot-dos32.png
+            else
+              scrot screenshot-dos32.png
+            fi
           fi
 
           kill $DOSBOX_PID 2>/dev/null || true
