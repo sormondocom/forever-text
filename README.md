@@ -39,6 +39,60 @@ Each target family has its own pipeline so failures are immediately visible.
 
 ---
 
+## Platform Matrix
+
+Every push to `main` builds all targets, runs the 74-test buffer suite where
+the platform supports it, and publishes the results to the
+[latest rolling release](https://github.com/sormondocom/forever-text/releases/tag/latest).
+**A screenshot in the release is proof that tests passed** — the screenshot
+step only runs after the test step succeeds.
+
+### Desktop, Server, and DOS
+
+| Platform | Architecture | Tests | Results | Screenshot |
+|---|---|---|---|---|
+| Linux x86-64 | x86-64 | 74/74 — native | [test-results-linux.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-linux.txt) | [screenshot-linux.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png) |
+| macOS Apple Silicon | AArch64 | 74/74 — native | [test-results-macos.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-macos.txt) | [screenshot-macos.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png) |
+| DOS 16-bit real mode | 8086 | 74/74 — in DOSBox | [test-results-dos16.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos16.txt) | [screenshot-dos16.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png) |
+| DOS 32-bit protected mode | 386 | 74/74 — in DOSBox | [test-results-dos32.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos32.txt) | [screenshot-dos32.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png) |
+
+### POSIX Cross-Compiled (QEMU test execution)
+
+These targets have no emulator screenshot; the CI pipeline cross-compiles the
+test binary and executes it under QEMU user-mode emulation.
+
+| Platform | Architecture | Tests | CI Badge |
+|---|---|---|---|
+| Motorola 68k (Linux ELF) | 68000 | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| PowerPC | PPC32 big-endian | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| MIPS big-endian | MIPS32 | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| MIPS little-endian | MIPSEL | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| IBM Z / s390x | S/390 64-bit | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| RISC-V 64-bit | RV64GC | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| ARM 32-bit | ARMv4T | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+| AArch64 / ARM 64-bit | ARM 64-bit | 74/74 — QEMU | [![POSIX](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-posix.yml) |
+
+### 8-bit and Vintage
+
+Unit tests exceed available RAM on these platforms (≤ 38 KB usable on 6502
+targets).  The screenshot is the attestation — it proves the binary compiled,
+loaded into the emulator, and the editor accepted key input.
+
+| Platform | CPU | Attestation | Screenshot |
+|---|---|---|---|
+| Commodore 64 | MOS 6502 @ 1 MHz | editor boots + key input | [screenshot-c64.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png) |
+| Atari 400/800/XL/XE | 6502C @ 1.79 MHz | editor boots + key input | [screenshot-atari8.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png) |
+| Apple IIe enhanced | 65C02 @ 1 MHz | editor boots + key input | [screenshot-apple2.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png) |
+| Amiga 68k | 68000 @ 7 MHz | editor boots + key input | [screenshot-amiga.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png) |
+| Atari ST | 68000 @ 8 MHz | editor boots + key input | [screenshot-atarist.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png) |
+| TRS-80 Model III | Z80 @ 2.03 MHz | editor boots + key input | [screenshot-trs80.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png) |
+| TI-99/4A ⚠ Experimental | TMS9900 @ 3 MHz | boot screen (ROM required) | [screenshot-ti99.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png) |
+
+> All links resolve to the artifact from the **most recent push to `main`**.
+> If a screenshot link is broken, that platform's CI job failed or is still running.
+
+---
+
 ## Downloads
 
 Every push to `main` builds all targets and publishes them to the
@@ -95,6 +149,7 @@ Direct links for each architecture:
 
 ## Table of Contents
 
+- [Platform Matrix](#platform-matrix)
 - [Downloads](#downloads)
 - [Ethos](#ethos)
 - [Current Functionality](#current-functionality)

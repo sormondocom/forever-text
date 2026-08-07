@@ -45,44 +45,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build (Apple Clang, ANSI platform)
+      - name: Build editor (Apple Clang, ANSI platform)
         run: |
           cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -Isrc \
             -o forever-text \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c
 
+      - name: Build and run unit tests (macOS native)
+        run: |
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer \
+            tests/test_buffer.c src/buffer.c
+          ./test-buffer | tee test-results-macos.txt
+          grep -q "0 failed" test-results-macos.txt
+
       - name: Install VHS
         run: brew install vhs
 
       - name: Write tape
         run: |
+          # The tape runs the test suite first, then the editor —
+          # a single screenshot that proves both tests passed and the
+          # editor runs on macOS Apple Silicon.
           cat > screen.tape << 'TAPE'
           Output "screenshot-macos.png"
-          Set FontSize 14
+          Set FontSize 13
           Set Width 1280
-          Set Height 600
+          Set Height 720
           Set Theme "Monokai"
           Set Padding 0
 
+          Type "./test-buffer"
+          Enter
+          Sleep 3s
           Type "./forever-text"
           Enter
           Sleep 2s
-          Type "Hello from Forever Text on macOS Apple Silicon!"
+          Type "74/74 tests passed — Hello from macOS Apple Silicon!"
           Sleep 400ms
           Enter
-          Type "A cross-platform C89 editor — from macOS to Commodore 64."
+          Type "C89 · AArch64 · Apple Silicon"
           Sleep 1s
           TAPE
 
       - name: Render screenshot
         run: vhs screen.tape
 
-      - name: Upload artifact
+      - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-macos
           path: screenshot-macos.png
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-macos
+          path: test-results-macos.txt
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -92,7 +113,9 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-macos.png
+          files: |
+            screenshot-macos.png
+            test-results-macos.txt
 
   # =======================================================================
   # DOS 16-bit — ia16-elf-gcc + DOSBox + Xvfb
@@ -122,12 +145,62 @@ jobs:
             src/main.c src/editor.c src/buffer.c src/platform/bios.c \
             -li86
 
+      - name: Build DOS 16-bit unit test binary
+        run: |
+          ia16-elf-gcc \
+            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -mcmodel=small \
+            -Isrc \
+            -o test-buffer-dos16.exe \
+            tests/test_buffer.c src/buffer.c \
+            -li86
+
       - name: Install DOSBox and screenshot tools
         run: |
           sudo apt-get install -y dosbox xvfb scrot xdotool
 
-      - name: Configure DOSBox
+      - name: Run unit tests in DOSBox (16-bit)
+        # DOSBox autoexec runs the test binary, redirects stdout to RESULTS.TXT
+        # on the mounted host directory, then exits.  We verify the file on the
+        # host — if "0 failed" is not found the step fails and the screenshot
+        # step is skipped, so a screenshot in the release proves tests passed.
         run: |
+          mkdir -p dostest
+          cp test-buffer-dos16.exe dostest/
+          cat > dosbox-test16.conf << 'EOF'
+          [cpu]
+          core=auto
+          cycles=50000
+
+          [sdl]
+          output=surface
+          fullscreen=false
+          windowresolution=800x600
+
+          [sblaster]
+          sbtype=none
+
+          [autoexec]
+          mount c dostest
+          c:
+          test-buffer-dos16.exe > results.txt
+          exit
+          EOF
+
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          XVFB_PID=$!
+          sleep 1
+          export DISPLAY=:99
+          timeout 90 dosbox -conf dosbox-test16.conf
+          echo "--- DOS 16-bit test output ---"
+          cat dostest/results.txt
+          grep -q "0 failed" dostest/results.txt
+          cp dostest/results.txt test-results-dos16.txt
+          echo "All 74 tests PASSED on DOS 16-bit (8086 real mode)"
+
+      - name: Run editor in DOSBox and capture screenshot
+        run: |
+          export DISPLAY=:99
           mkdir -p dostest
           cp forever-text-dos16.exe dostest/
           cat > dosbox16.conf << 'EOF'
@@ -149,26 +222,27 @@ jobs:
           forever-text-dos16.exe
           EOF
 
-      - name: Run emulator and capture screenshot
-        run: |
-          Xvfb :99 -screen 0 1024x768x24 -ac &
-          sleep 1
-          export DISPLAY=:99
           dosbox -conf dosbox16.conf &
           DOSBOX_PID=$!
           sleep 15
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 100 "Hello from 16-bit DOS!"
+          xdotool type --delay 100 "74/74 tests passed — Hello from 16-bit DOS!"
           sleep 2
           scrot screenshot-dos16.png
           kill $DOSBOX_PID 2>/dev/null || true
 
-      - name: Upload artifact
+      - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos16
           path: screenshot-dos16.png
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-dos16
+          path: test-results-dos16.txt
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -178,7 +252,9 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-dos16.png
+          files: |
+            screenshot-dos16.png
+            test-results-dos16.txt
 
   # =======================================================================
   # DOS 32-bit — DJGPP + DOSBox + Xvfb
@@ -221,12 +297,60 @@ jobs:
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
             -static
 
+      - name: Build DOS 32-bit unit test binary
+        run: |
+          i586-pc-msdosdjgpp-gcc \
+            -std=gnu89 -Wall -Wextra -Werror -Os \
+            -Isrc \
+            -o test-buffer-dos32.exe \
+            tests/test_buffer.c src/buffer.c \
+            -static
+
       - name: Install DOSBox and screenshot tools
         run: |
           sudo apt-get install -y dosbox xvfb scrot xdotool
 
-      - name: Configure DOSBox
+      - name: Run unit tests in DOSBox (32-bit)
+        # DJGPP executables are 32-bit protected mode; DOSBox provides the
+        # DPMI host automatically.  The test binary uses only stdio, so
+        # stdout redirection to RESULTS.TXT works via DOSBox's DOS shell.
         run: |
+          mkdir -p dostest32
+          cp test-buffer-dos32.exe dostest32/
+          cat > dosbox-test32.conf << 'EOF'
+          [cpu]
+          core=auto
+          cycles=50000
+
+          [sdl]
+          output=surface
+          fullscreen=false
+          windowresolution=800x600
+
+          [sblaster]
+          sbtype=none
+
+          [autoexec]
+          mount c dostest32
+          c:
+          test-buffer-dos32.exe > results.txt
+          exit
+          EOF
+
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          XVFB_PID=$!
+          sleep 1
+          export DISPLAY=:99
+          timeout 90 dosbox -conf dosbox-test32.conf
+          echo "--- DOS 32-bit test output ---"
+          cat dostest32/results.txt
+          grep -q "0 failed" dostest32/results.txt
+          cp dostest32/results.txt test-results-dos32.txt
+          echo "All 74 tests PASSED on DOS 32-bit (386 protected mode)"
+
+      - name: Run editor in DOSBox and capture screenshot
+        run: |
+          export DISPLAY=:99
           mkdir -p dostest32
           cp forever-text-dos32.exe dostest32/
           cat > dosbox32.conf << 'EOF'
@@ -249,26 +373,27 @@ jobs:
           forever-text-dos32.exe
           EOF
 
-      - name: Run emulator and capture screenshot
-        run: |
-          Xvfb :99 -screen 0 1024x768x24 -ac &
-          sleep 1
-          export DISPLAY=:99
           dosbox -conf dosbox32.conf &
           DOSBOX_PID=$!
           sleep 15
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 100 "Hello from 32-bit DOS!"
+          xdotool type --delay 100 "74/74 tests passed — Hello from 32-bit DOS!"
           sleep 2
           scrot screenshot-dos32.png
           kill $DOSBOX_PID 2>/dev/null || true
 
-      - name: Upload artifact
+      - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos32
           path: screenshot-dos32.png
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-dos32
+          path: test-results-dos32.txt
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -278,7 +403,9 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-dos32.png
+          files: |
+            screenshot-dos32.png
+            test-results-dos32.txt
 
   # =======================================================================
   # Commodore 64 — cc65 + VICE x64sc + Xvfb

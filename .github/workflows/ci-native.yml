@@ -287,10 +287,11 @@ jobs:
           name: forever-text-linux-x86_64
           path: forever-text
 
-      - name: Rename binary and screenshot for release
+      - name: Rename binary, screenshot, and test results for release
         run: |
           cp forever-text forever-text-linux-x86_64
           cp proof/png/screenshot_01_startup.png screenshot-linux.png
+          cp unit_test_output.txt test-results-linux.txt
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -303,3 +304,4 @@ jobs:
           files: |
             forever-text-linux-x86_64
             screenshot-linux.png
+            test-results-linux.txt
