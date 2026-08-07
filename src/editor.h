@@ -9,8 +9,16 @@
 
 #define FT_VERSION      "0.1"
 #define FT_NAME         "Forever Text"
-#define FT_MAX_FILENAME 256
 #define FT_TAB_SIZE     4
+
+/* 6502 (cc65) targets have very limited RAM; clamp filename and message buffers. */
+#ifdef __CC65__
+#  define FT_MAX_FILENAME    16   /* C64 max=16, Atari max=12, Apple II max=15 */
+#  define FT_STATUS_MSG_SIZE 80
+#else
+#  define FT_MAX_FILENAME    256
+#  define FT_STATUS_MSG_SIZE 512
+#endif
 
 /* Number of screen rows consumed by the header (title bar + ruler) */
 #define FT_HEADER_ROWS  2
@@ -68,8 +76,8 @@ typedef struct {
     int paper_cols;   /* right-margin column count; 0 = off */
     int wrap;         /* 1 = auto word-wrap at paper_cols */
 
-    int  running;          /* main loop flag */
-    char status_msg[512];  /* transient message shown in footer */
+    int  running;                       /* main loop flag */
+    char status_msg[FT_STATUS_MSG_SIZE]; /* transient message shown in footer */
 } FtEditor;
 
 void ft_editor_init(FtEditor *ed);

@@ -282,10 +282,16 @@ void ft_buffer_get_line(FtBuffer *buf, int row, char *dest, int max)
     dest[n] = '\0';
 }
 
+#ifdef __CC65__
+#  define FT_LINE_BUF_SIZE 128
+#else
+#  define FT_LINE_BUF_SIZE 4096
+#endif
+
 int ft_buffer_load(FtBuffer *buf, const char *filename)
 {
     FILE        *fp;
-    static char  line_buf[4096];
+    static char  line_buf[FT_LINE_BUF_SIZE];
     int    i;
     int    len;
     char  *nl;
