@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Compiles the editor for every POSIX/Unix cross-target and runs the
 # buffer unit tests under QEMU user-mode emulation on each architecture.
@@ -76,6 +79,16 @@ jobs:
         with:
           name: forever-text-${{ matrix.target }}
           path: forever-text-${{ matrix.target }}
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-${{ matrix.target }}
 
   # =====================================================================
   # Compile unit tests and run under QEMU user-mode

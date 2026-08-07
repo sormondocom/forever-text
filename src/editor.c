@@ -96,8 +96,9 @@ static int is_pgbreak(FtLine *ln)
  */
 static void draw_title(FtEditor *ed)
 {
-    static char  info[96];
+    static char  info[128];
     static char  name_field[FT_MAX_FILENAME + 32];
+    static char  indent_info[40];
     int   name_len;
     int   info_len;
     int   pad;
@@ -109,6 +110,20 @@ static void draw_title(FtEditor *ed)
 
     fname = (ed->filename[0]) ? ed->filename : "[No Name]";
 
+    /* Build border indicator for the right-side info block */
+    if (ed->indent_mode) {
+        sprintf(indent_info, "[BORDER L%d R%d]  ",
+                ed->indent_left, ed->indent_right);
+    } else if (ed->indent_left > 0 && ed->indent_right > 0) {
+        sprintf(indent_info, "[L%d R%d]  ", ed->indent_left, ed->indent_right);
+    } else if (ed->indent_left > 0) {
+        sprintf(indent_info, "[L%d]  ", ed->indent_left);
+    } else if (ed->indent_right > 0) {
+        sprintf(indent_info, "[R%d]  ", ed->indent_right);
+    } else {
+        indent_info[0] = '\0';
+    }
+
     /* Right-hand status block includes optional pagination info */
     col_display = ed->cursor_col + 1;
 
@@ -116,13 +131,14 @@ static void draw_title(FtEditor *ed)
         int cur_page  = ed->cursor_row / ed->paper_lines + 1;
         int tot_pages = (ed->buf.num_lines + ed->paper_lines - 1)
                         / ed->paper_lines;
-        sprintf(info, "  %s Pg %d/%d  Ln:%4d  Col:%3d  %s  ",
-                paper_name(ed->paper_lines),
+        sprintf(info, "  %s%s Pg %d/%d  Ln:%4d  Col:%3d  %s  ",
+                indent_info, paper_name(ed->paper_lines),
                 cur_page, tot_pages,
                 ed->cursor_row + 1, col_display,
                 ed->dirty ? "[Modified]" : "[Clean]  ");
     } else {
-        sprintf(info, "  Ln:%4d  Col:%3d  %s  ",
+        sprintf(info, "  %sLn:%4d  Col:%3d  %s  ",
+                indent_info,
                 ed->cursor_row + 1,
                 col_display,
                 ed->dirty ? "[Modified]" : "[Clean]  ");
@@ -164,19 +180,43 @@ static void draw_ruler(FtEditor *ed)
     char  c;
     int   cursor_screen_col;
     int   margin_screen_col;
+    int   lborder_screen_col;
+    int   rborder_screen_col;
 
     platform_move(1, 0);
 
-    cursor_screen_col = ed->cursor_col - ed->scroll_col;
-    margin_screen_col = (ed->paper_cols > 0)
-                        ? ed->paper_cols - ed->scroll_col
-                        : -1;
+    cursor_screen_col  = ed->cursor_col - ed->scroll_col;
+    margin_screen_col  = (ed->paper_cols > 0)
+                         ? ed->paper_cols - ed->scroll_col
+                         : -1;
+    lborder_screen_col = (ed->indent_left > 0)
+                         ? ed->indent_left - ed->scroll_col
+                         : -1;
+    rborder_screen_col = (ed->indent_right > 0)
+                         ? ed->indent_right - ed->scroll_col
+                         : -1;
 
     for (col = 0; col < ed->screen_cols; col++) {
         buf_col = col + ed->scroll_col + 1;  /* 1-based for display */
 
-        if (col == cursor_screen_col) {
+        if (col == cursor_screen_col && col == lborder_screen_col) {
+            platform_attr_reverse();
+            platform_putch('[');
+            platform_attr_normal();
+        } else if (col == cursor_screen_col && col == rborder_screen_col) {
+            platform_attr_reverse();
+            platform_putch(']');
+            platform_attr_normal();
+        } else if (col == cursor_screen_col) {
             platform_putch('v');
+        } else if (col == lborder_screen_col) {
+            platform_attr_reverse();
+            platform_putch('[');
+            platform_attr_normal();
+        } else if (col == rborder_screen_col) {
+            platform_attr_reverse();
+            platform_putch(']');
+            platform_attr_normal();
         } else if (col == margin_screen_col) {
             platform_attr_reverse();
             platform_putch('|');
@@ -256,6 +296,7 @@ static void draw_margin(FtEditor *ed, int display_row)
     platform_putch('|');
     platform_attr_normal();
 }
+
 
 /*
  * Draw the editing area (rows FT_HEADER_ROWS to screen_rows-2).
@@ -380,28 +421,38 @@ static void draw_footer(FtEditor *ed)
     int         hlen;
     int         pad;
 
-    if (ed->paper_cols > 0)
-        wrap_indicator = ed->wrap ? "[WRAP]" : "[----]";
-    else
-        wrap_indicator = "      ";
-
-    sprintf(hotkeys,
-        " ^S Save  ^L Load  ^Q Quit  ^K Cut  ^U Paste"
-        "  ^F Find  ^G Goto  ^P PgBrk  ^O Paper  ^W %s",
-        wrap_indicator);
-
     platform_move(ed->screen_rows - 1, 0);
     platform_attr_reverse();
 
-    /* If there is a status message, show it instead */
+    /* Status message takes priority; consumed after one frame */
     if (ed->status_msg[0]) {
         int mlen = (int)strlen(ed->status_msg);
         if (mlen > ed->screen_cols) mlen = ed->screen_cols;
         platform_putn(ed->status_msg, mlen);
         pad = ed->screen_cols - mlen;
         if (pad > 0) put_spaces(pad);
-        ed->status_msg[0] = '\0';  /* consume after one frame */
+        ed->status_msg[0] = '\0';
+    } else if (ed->indent_mode) {
+        /* Border-adjust mode: show indent controls and live values */
+        sprintf(hotkeys,
+            " ^B/ESC Exit  Left/Right = Left margin"
+            "  [ ] = Right margin  [L%d R%d]",
+            ed->indent_left, ed->indent_right);
+        hlen = (int)strlen(hotkeys);
+        if (hlen > ed->screen_cols) hlen = ed->screen_cols;
+        platform_putn(hotkeys, hlen);
+        pad = ed->screen_cols - hlen;
+        if (pad > 0) put_spaces(pad);
     } else {
+        if (ed->paper_cols > 0)
+            wrap_indicator = ed->wrap ? "[WRAP]" : "[----]";
+        else
+            wrap_indicator = "      ";
+
+        sprintf(hotkeys,
+            " ^S Save  ^L Load  ^Q Quit  ^K Cut  ^U Paste"
+            "  ^F Find  ^G Goto  ^P PgBrk  ^O Paper  ^W %s  ^B Border",
+            wrap_indicator);
         hlen = (int)strlen(hotkeys);
         if (hlen > ed->screen_cols) hlen = ed->screen_cols;
         platform_putn(hotkeys, hlen);
@@ -757,12 +808,83 @@ static void cmd_insert_page_break(FtEditor *ed)
 
 static void cmd_toggle_wrap(FtEditor *ed)
 {
-    if (ed->paper_cols <= 0) {
-        sprintf(ed->status_msg, "No paper width -- set paper first (^O)");
+    if (ed->paper_cols <= 0 && ed->indent_right <= 0) {
+        sprintf(ed->status_msg, "No paper width -- set paper or borders first");
         return;
     }
     ed->wrap ^= 1;
     sprintf(ed->status_msg, "Word wrap %s", ed->wrap ? "on" : "off");
+}
+
+/*
+ * Reflow all buffer lines to fit between indent_left and indent_right.
+ * Each line gets its leading spaces normalised to indent_left, then any
+ * line that exceeds indent_right is word-wrapped (honouring ed->wrap).
+ * Blank lines and hard page-breaks are left untouched.
+ */
+static void cmd_reflow_to_borders(FtEditor *ed)
+{
+    int row;
+    int leading;
+    int i;
+    int len;
+    int wrap_col;
+    int split_at;
+
+    if (ed->indent_left <= 0 && ed->indent_right <= 0) return;
+
+    /* Only wrap if the right border leaves room beyond the left border */
+    wrap_col = (ed->wrap && ed->indent_right > ed->indent_left)
+               ? ed->indent_right : 0;
+
+    row = 0;
+    while (row < ed->buf.num_lines) {
+        /* Skip hard page breaks */
+        if (is_pgbreak(&ed->buf.lines[row])) { row++; continue; }
+
+        /* Count leading spaces (read before any mutations) */
+        leading = 0;
+        while (leading < ed->buf.lines[row].len &&
+               ed->buf.lines[row].data[leading] == ' ')
+            leading++;
+
+        /* Skip blank lines and whitespace-only lines */
+        if (leading == ed->buf.lines[row].len) { row++; continue; }
+
+        /* Strip existing leading spaces, then insert indent_left spaces */
+        for (i = 0; i < leading; i++)
+            ft_buffer_delete_char(&ed->buf, row, 0);
+        for (i = 0; i < ed->indent_left; i++)
+            ft_buffer_insert_char(&ed->buf, row, i, ' ');
+
+        /* Wrap if the line now exceeds the right border */
+        len = ed->buf.lines[row].len;
+        if (wrap_col > 0 && len > wrap_col) {
+            /* Search backward from wrap_col for a word boundary */
+            split_at = wrap_col;
+            while (split_at > ed->indent_left &&
+                   (unsigned char)ed->buf.lines[row].data[split_at] != ' ')
+                split_at--;
+
+            if (split_at <= ed->indent_left)
+                split_at = wrap_col;  /* no word break found, hard wrap */
+
+            /* Remove the space at the split point then split the line */
+            if (split_at < ed->buf.lines[row].len &&
+                (unsigned char)ed->buf.lines[row].data[split_at] == ' ')
+                ft_buffer_delete_char(&ed->buf, row, split_at);
+
+            ft_buffer_split_line(&ed->buf, row, split_at);
+            /* Don't advance row: next iteration re-indents the continuation */
+        } else {
+            row++;
+        }
+    }
+
+    ed->dirty = 1;
+    clamp_cursor(ed);
+    sprintf(ed->status_msg, "Reflowed to borders  L%d R%d",
+            ed->indent_left, ed->indent_right);
 }
 
 /*
@@ -772,17 +894,19 @@ static void cmd_toggle_wrap(FtEditor *ed)
  */
 static void maybe_wrap(FtEditor *ed)
 {
-    int    break_col, i, new_col;
+    int    break_col, i, new_col, wrap_col;
     FtLine *ln;
 
-    if (!ed->wrap || ed->paper_cols <= 0) return;
-    if (ed->cursor_col < ed->paper_cols) return;
+    /* Right border takes precedence over paper_cols when set */
+    wrap_col = (ed->indent_right > 0) ? ed->indent_right : ed->paper_cols;
+    if (!ed->wrap || wrap_col <= 0) return;
+    if (ed->cursor_col < wrap_col) return;
 
     ln = &ed->buf.lines[ed->cursor_row];
 
-    /* Scan backwards for a space at or before the margin */
+    /* Scan backwards for a space within the text area (not inside the indent) */
     break_col = -1;
-    for (i = ed->paper_cols - 1; i >= 0; i--) {
+    for (i = wrap_col - 1; i >= ed->indent_left; i--) {
         if (i < ln->len && (unsigned char)ln->data[i] == ' ') {
             break_col = i;
             break;
@@ -790,18 +914,25 @@ static void maybe_wrap(FtEditor *ed)
     }
 
     if (break_col >= 0) {
-        /* Soft wrap: remove the space and split there */
+        /* Soft wrap: remove the space and split at the word boundary */
         new_col = ed->cursor_col - break_col - 1;
         ft_buffer_delete_char(&ed->buf, ed->cursor_row, break_col);
         ft_buffer_split_line(&ed->buf, ed->cursor_row, break_col);
         ed->cursor_row++;
         ed->cursor_col = new_col;
     } else {
-        /* Hard wrap: split exactly at the margin */
-        new_col = ed->cursor_col - ed->paper_cols;
-        ft_buffer_split_line(&ed->buf, ed->cursor_row, ed->paper_cols);
+        /* Hard wrap: no word break found — split at the right border */
+        new_col = ed->cursor_col - wrap_col;
+        ft_buffer_split_line(&ed->buf, ed->cursor_row, wrap_col);
         ed->cursor_row++;
         ed->cursor_col = new_col;
+    }
+
+    /* Continuation line starts at the left border */
+    if (ed->indent_left > 0) {
+        for (i = 0; i < ed->indent_left; i++)
+            ft_buffer_insert_char(&ed->buf, ed->cursor_row, i, ' ');
+        ed->cursor_col += ed->indent_left;
     }
 }
 
@@ -812,6 +943,48 @@ static void maybe_wrap(FtEditor *ed)
 static void process_key(FtEditor *ed, int key)
 {
     int line_len;
+
+    /*
+     * Border-adjust mode.
+     * indent_left / indent_right are buffer column positions for the ruler
+     * markers (0 = no marker).  Left/Right arrows move the left border;
+     * [ / ] move the right border.
+     */
+    if (ed->indent_mode) {
+        switch (key) {
+            case KEY_LEFT:
+                if (ed->indent_left > 1) ed->indent_left--;
+                else ed->indent_left = 0;
+                break;
+            case KEY_RIGHT:
+                ed->indent_left++;
+                break;
+            case '[':
+                /* Move right border inward (left) */
+                if (ed->indent_right > ed->indent_left + 1)
+                    ed->indent_right--;
+                else
+                    ed->indent_right = 0;
+                break;
+            case ']':
+                /* Move right border outward (right); in wrap mode cap at paper margin */
+                ed->indent_right++;
+                if (ed->wrap && ed->paper_cols > 0 &&
+                    ed->indent_right > ed->paper_cols)
+                    ed->indent_right = ed->paper_cols;
+                break;
+            case KEY_ESCAPE:
+            case KEY_CTRL_B:
+                ed->indent_mode = 0;
+                cmd_reflow_to_borders(ed);
+                if (ed->indent_left > 0 && ed->cursor_col < ed->indent_left)
+                    ed->cursor_col = ed->indent_left;
+                break;
+            default:
+                break;
+        }
+        return;
+    }
 
     switch (key) {
         /* --- Navigation --- */
@@ -875,10 +1048,18 @@ static void process_key(FtEditor *ed, int key)
 
         /* --- Editing --- */
         case KEY_ENTER:
-            ft_buffer_split_line(&ed->buf, ed->cursor_row, ed->cursor_col);
-            ed->cursor_row++;
-            ed->cursor_col = 0;
-            ed->dirty = 1;
+            {
+                int ei;
+                ft_buffer_split_line(&ed->buf, ed->cursor_row, ed->cursor_col);
+                ed->cursor_row++;
+                ed->cursor_col = 0;
+                ed->dirty = 1;
+                if (ed->indent_left > 0) {
+                    for (ei = 0; ei < ed->indent_left; ei++)
+                        ft_buffer_insert_char(&ed->buf, ed->cursor_row, ei, ' ');
+                    ed->cursor_col = ed->indent_left;
+                }
+            }
             break;
 
         case KEY_BACKSPACE:
@@ -958,9 +1139,26 @@ static void process_key(FtEditor *ed, int key)
             cmd_toggle_wrap(ed);
             break;
 
+        case KEY_CTRL_B:
+            ed->indent_mode = 1;
+            /* Anchor the right border at the paper margin on first entry */
+            if (ed->indent_right == 0)
+                ed->indent_right = (ed->paper_cols > 0)
+                                   ? ed->paper_cols
+                                   : ed->screen_cols - 1;
+            break;
+
         default:
             /* Printable character: insert at cursor */
             if (key >= 32 && key < 127) {
+                /* On an empty line with a left border, advance to the border first */
+                if (ed->indent_left > 0
+                        && ed->buf.lines[ed->cursor_row].len == 0) {
+                    int pad;
+                    for (pad = 0; pad < ed->indent_left; pad++)
+                        ft_buffer_insert_char(&ed->buf, ed->cursor_row, pad, ' ');
+                    ed->cursor_col = ed->indent_left;
+                }
                 ft_buffer_insert_char(&ed->buf, ed->cursor_row,
                                       ed->cursor_col, (char)key);
                 ed->cursor_col++;
@@ -992,6 +1190,9 @@ void ft_editor_init(FtEditor *ed)
     ed->wrap         = 1;
     ed->status_msg[0] = '\0';
     ed->filename[0]   = '\0';
+    ed->indent_left   = 0;
+    ed->indent_right  = 0;
+    ed->indent_mode   = 0;
     platform_get_size(&ed->screen_rows, &ed->screen_cols);
 }
 

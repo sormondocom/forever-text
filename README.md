@@ -37,18 +37,65 @@ Each target family has its own pipeline so failures are immediately visible.
 > and has no stable prebuilt release.  Its badge may be red without blocking
 > other pipelines.
 
-Every green CI run produces **downloadable compiled binaries** for each target
-as build artifacts.  Artifacts are GitHub's independent third-party record that
-the source compiled cleanly on that commit.  To download them: click any badge
-above → select the most recent passing run → scroll to **Artifacts** at the
-bottom of the run page.
+---
 
-[**→ Browse all workflow runs and artifacts**](https://github.com/sormondocom/forever-text/actions)
+## Downloads
+
+Every push to `main` builds all targets and publishes them to the
+[**latest rolling release**](https://github.com/sormondocom/forever-text/releases/tag/latest).
+Direct links for each architecture:
+
+### Desktop / Server
+
+| Target | File |
+|---|---|
+| Linux x86-64 | [forever-text-linux-x86_64](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-linux-x86_64) |
+| Windows x86-64 | [forever-text-windows-x86_64.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-windows-x86_64.exe) |
+| Windows i686 (32-bit) | [forever-text-windows-i686.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-windows-i686.exe) |
+| macOS Apple Silicon | [forever-text-macos-arm64](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-macos-arm64) |
+| macOS Intel | [forever-text-macos-x86_64](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-macos-x86_64) |
+
+### POSIX Cross-Compiled (statically linked Linux ELFs)
+
+| Target | File |
+|---|---|
+| Motorola 68k | [forever-text-m68k](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-m68k) |
+| PowerPC | [forever-text-ppc](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-ppc) |
+| MIPS big-endian | [forever-text-mips](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-mips) |
+| MIPS little-endian | [forever-text-mipsel](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-mipsel) |
+| IBM Z / s390x | [forever-text-s390x](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-s390x) |
+| RISC-V 64-bit | [forever-text-riscv64](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-riscv64) |
+| ARM 32-bit | [forever-text-arm](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-arm) |
+| AArch64 / ARM 64-bit | [forever-text-arm64](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-arm64) |
+
+### DOS
+
+| Target | File |
+|---|---|
+| DOS 16-bit real mode (ia16) | [forever-text-dos16.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-dos16.exe) |
+| DOS 32-bit protected mode (DJGPP) | [forever-text-dos32.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-dos32.exe) |
+
+### 8-bit / Vintage
+
+| Target | File | Format |
+|---|---|---|
+| Commodore 64 | [forever-text-c64.prg](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-c64.prg) | PRG — `LOAD"*",8,1` then `RUN` |
+| Atari 400/800/XL/XE | [forever-text-atari8.xex](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-atari8.xex) | XEX — load in Atari800 emulator |
+| Apple IIe enhanced | [forever-text-apple2](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-apple2) | Binary — load in AppleWin / linapple |
+| Amiga 68k | [forever-text-amiga](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-amiga) | AmigaOS HUNK — run in FS-UAE / WinUAE |
+| Atari ST / TT / Falcon | [forever-text-atarist.tos](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-atarist.tos) | TOS/MiNT — run in Hatari / ARAnyM |
+| TRS-80 Model III Z80 (Intel HEX) | [forever-text-trs80.ihx](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-trs80.ihx) | Intel HEX — for flashing / sdltrs |
+| TRS-80 Model III Z80 (CMD binary) | [forever-text-trs80.cmd](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-trs80.cmd) | CMD — loadable from TRSDOS / trs80gp |
+| TI-99/4A TMS9900 ⚠ Experimental | [forever-text-ti99.bin](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-ti99.bin) | BIN — run in Classic99 / MAME ti99_4a |
+
+> Links always point to the build from the latest `main` commit.
+> [Browse all releases and past builds](https://github.com/sormondocom/forever-text/releases)
 
 ---
 
 ## Table of Contents
 
+- [Downloads](#downloads)
 - [Ethos](#ethos)
 - [Current Functionality](#current-functionality)
 - [Target Architectures](#target-architectures)

@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Builds the editor for the TI-99/4A (TMS9900 CPU) — EXPERIMENTAL.
 #
@@ -83,3 +86,13 @@ jobs:
         with:
           name: forever-text-ti99
           path: forever-text-ti99.bin
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-ti99.bin

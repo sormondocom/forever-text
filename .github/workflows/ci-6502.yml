@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Builds the editor for three 6502-family targets using cc65.
 # cc65 is available in the Ubuntu apt repository.
@@ -45,6 +48,16 @@ jobs:
           name: forever-text-c64
           path: forever-text-c64.prg
 
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-c64.prg
+
   atari-8bit:
     name: Atari 8-bit (cc65)
     runs-on: ubuntu-latest
@@ -67,6 +80,16 @@ jobs:
           name: forever-text-atari8
           path: forever-text-atari8.xex
 
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-atari8.xex
+
   apple-ii:
     name: Apple II enhanced (cc65)
     runs-on: ubuntu-latest
@@ -88,3 +111,13 @@ jobs:
         with:
           name: forever-text-apple2
           path: forever-text-apple2
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-apple2

@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Builds and tests the editor natively on x86-64 Linux.
 #
@@ -283,3 +286,16 @@ jobs:
         with:
           name: forever-text-linux-x86_64
           path: forever-text
+
+      - name: Rename binary for release
+        run: cp forever-text forever-text-linux-x86_64
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-linux-x86_64

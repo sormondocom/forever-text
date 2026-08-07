@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Builds the editor for the Commodore Amiga (68000 CPU, AmigaOS).
 #
@@ -45,3 +48,13 @@ jobs:
         with:
           name: forever-text-amiga
           path: forever-text-amiga
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-amiga

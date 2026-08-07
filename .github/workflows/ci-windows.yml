@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 # -----------------------------------------------------------------------
 # Cross-compiles the editor for Windows (x86-64) using MinGW-w64 running
 # on the Ubuntu CI runner.  The result is a standalone .exe that runs
@@ -43,6 +46,16 @@ jobs:
           name: forever-text-windows-x86_64
           path: forever-text-windows-x86_64.exe
 
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-windows-x86_64.exe
+
   windows-i686:
     name: Windows i686 / 32-bit (MinGW cross-compile)
     runs-on: ubuntu-latest
@@ -68,3 +81,13 @@ jobs:
         with:
           name: forever-text-windows-i686
           path: forever-text-windows-i686.exe
+
+      - name: Publish to rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
+          make_latest: false
+          body: "Built automatically from `main` on every push."
+          files: forever-text-windows-i686.exe

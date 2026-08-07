@@ -78,6 +78,10 @@ typedef struct {
 
     int  running;                       /* main loop flag */
     char status_msg[FT_STATUS_MSG_SIZE]; /* transient message shown in footer */
+
+    int indent_left;   /* blank columns before the text area (left margin) */
+    int indent_right;  /* blank columns after the text area (right margin) */
+    int indent_mode;   /* 1 while in border-adjust mode (^B) */
 } FtEditor;
 
 void ft_editor_init(FtEditor *ed);
