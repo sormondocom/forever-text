@@ -74,7 +74,7 @@ jobs:
           Set FontSize 13
           Set Width 1280
           Set Height 720
-          Set Theme "Monokai"
+          Set Theme "Molokai"
           Set Padding 0
 
           Type "./forever-text"
@@ -195,12 +195,9 @@ jobs:
           echo "All 74 tests PASSED on DOS 16-bit (8086 real mode)"
 
       - name: Run editor in DOSBox and capture screenshot
-        # Uses DOSBox's built-in Ctrl+F5 screenshot (captures the DOS display
-        # directly — no window chrome, authentic CGA/VGA resolution).
-        # DOSBox saves captures to the directory set in [paths] captures=.
         run: |
           export DISPLAY=:99
-          mkdir -p dostest dosbox-capture16
+          mkdir -p dostest
           cp forever-text-dos16.exe dostest/
           cat > dosbox16.conf << 'EOF'
           [cpu]
@@ -215,9 +212,6 @@ jobs:
           [sblaster]
           sbtype=none
 
-          [paths]
-          captures=dosbox-capture16
-
           [autoexec]
           mount c dostest
           c:
@@ -226,31 +220,19 @@ jobs:
 
           dosbox -conf dosbox16.conf &
           DOSBOX_PID=$!
-          sleep 15
+          sleep 20
 
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
-          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-
-          # Type text so the screenshot shows real editor content
-          xdotool type --delay 120 "74/74 tests passed -- Hello from 16-bit DOS!"
-          sleep 1
-
-          # Trigger DOSBox internal screenshot (Ctrl+F5) — saves to dosbox-capture16/
-          xdotool key ctrl+F5
-          sleep 2
-
-          # Locate and rename the captured PNG
-          SHOT=$(ls -t dosbox-capture16/*.png 2>/dev/null | head -1)
-          if [ -n "$SHOT" ]; then
-            cp "$SHOT" screenshot-dos16.png
-            echo "Internal DOSBox screenshot saved: $SHOT"
+          if [ -n "$WIN" ]; then
+            xdotool windowfocus --sync "$WIN" 2>/dev/null || true
+            sleep 0.5
+            xdotool type --delay 120 "74/74 tests passed -- Hello from 16-bit DOS!" 2>/dev/null || true
+            sleep 2
+            import -window "$WIN" screenshot-dos16.png 2>/dev/null || \
+            scrot -u screenshot-dos16.png 2>/dev/null || \
+            scrot screenshot-dos16.png
           else
-            echo "No internal capture found; falling back to import -window"
-            if [ -n "$WIN" ]; then
-              import -window "$WIN" screenshot-dos16.png 2>/dev/null || scrot -u screenshot-dos16.png
-            else
-              scrot screenshot-dos16.png
-            fi
+            scrot screenshot-dos16.png
           fi
 
           kill $DOSBOX_PID 2>/dev/null || true
@@ -372,10 +354,9 @@ jobs:
           echo "All 74 tests PASSED on DOS 32-bit (386 protected mode)"
 
       - name: Run editor in DOSBox and capture screenshot
-        # Same internal Ctrl+F5 approach as DOS 16-bit.
         run: |
           export DISPLAY=:99
-          mkdir -p dostest32 dosbox-capture32
+          mkdir -p dostest32
           cp forever-text-dos32.exe dostest32/
           cat > dosbox32.conf << 'EOF'
           [cpu]
@@ -390,41 +371,27 @@ jobs:
           [sblaster]
           sbtype=none
 
-          [paths]
-          captures=dosbox-capture32
-
           [autoexec]
           mount c dostest32
           c:
-          Z:\ANSI.COM
           forever-text-dos32.exe
           EOF
 
           dosbox -conf dosbox32.conf &
           DOSBOX_PID=$!
-          sleep 15
+          sleep 20
 
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
-          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-
-          xdotool type --delay 120 "74/74 tests passed -- Hello from 32-bit DOS!"
-          sleep 1
-
-          # Trigger DOSBox internal screenshot (Ctrl+F5)
-          xdotool key ctrl+F5
-          sleep 2
-
-          SHOT=$(ls -t dosbox-capture32/*.png 2>/dev/null | head -1)
-          if [ -n "$SHOT" ]; then
-            cp "$SHOT" screenshot-dos32.png
-            echo "Internal DOSBox screenshot saved: $SHOT"
+          if [ -n "$WIN" ]; then
+            xdotool windowfocus --sync "$WIN" 2>/dev/null || true
+            sleep 0.5
+            xdotool type --delay 120 "74/74 tests passed -- Hello from 32-bit DOS!" 2>/dev/null || true
+            sleep 2
+            import -window "$WIN" screenshot-dos32.png 2>/dev/null || \
+            scrot -u screenshot-dos32.png 2>/dev/null || \
+            scrot screenshot-dos32.png
           else
-            echo "No internal capture found; falling back to import -window"
-            if [ -n "$WIN" ]; then
-              import -window "$WIN" screenshot-dos32.png 2>/dev/null || scrot -u screenshot-dos32.png
-            else
-              scrot screenshot-dos32.png
-            fi
+            scrot screenshot-dos32.png
           fi
 
           kill $DOSBOX_PID 2>/dev/null || true
