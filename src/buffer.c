@@ -284,8 +284,8 @@ void ft_buffer_get_line(FtBuffer *buf, int row, char *dest, int max)
 
 int ft_buffer_load(FtBuffer *buf, const char *filename)
 {
-    FILE  *fp;
-    char   line_buf[4096];
+    FILE        *fp;
+    static char  line_buf[4096];
     int    i;
     int    len;
     char  *nl;
