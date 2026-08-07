@@ -42,6 +42,7 @@
 #undef KEY_END
 #undef KEY_DELETE
 #undef KEY_INSERT
+#undef KEY_TAB
 #undef KEY_BACKSPACE
 #undef KEY_CTRL_L
 #undef KEY_F1
