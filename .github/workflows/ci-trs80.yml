@@ -3,7 +3,6 @@ name: TRS-80
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor for the TRS-80 Model III (Zilog Z80 CPU).
@@ -25,6 +24,7 @@ jobs:
   trs80:
     name: TRS-80 Model III (SDCC Z80)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

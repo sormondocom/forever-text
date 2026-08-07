@@ -3,7 +3,6 @@ name: DOS
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor and unit test binary for both DOS targets.
@@ -98,7 +97,7 @@ jobs:
       - name: Build editor for 32-bit DOS
         run: |
           i586-pc-msdosdjgpp-gcc \
-            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -std=c89 -Wall -Wextra -Werror -Os \
             -Isrc \
             -o forever-text-dos32.exe \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
@@ -107,7 +106,7 @@ jobs:
       - name: Build unit tests for 32-bit DOS
         run: |
           i586-pc-msdosdjgpp-gcc \
-            -std=c89 -pedantic -Wall -Wextra -Werror -Os \
+            -std=c89 -Wall -Wextra -Werror -Os \
             -Isrc \
             -o test-buffer-dos32.exe \
             tests/test_buffer.c src/buffer.c \

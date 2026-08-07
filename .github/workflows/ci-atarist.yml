@@ -3,7 +3,6 @@ name: Atari ST
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds the editor for the Atari ST / TT / Falcon (68000 CPU, MiNT OS).

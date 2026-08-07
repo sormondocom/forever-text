@@ -3,7 +3,6 @@ name: Native Linux
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:
 
 # -----------------------------------------------------------------------
 # Builds and tests the editor natively on x86-64 Linux.
