@@ -96,8 +96,8 @@ static int is_pgbreak(FtLine *ln)
  */
 static void draw_title(FtEditor *ed)
 {
-    char  info[96];
-    char  name_field[FT_MAX_FILENAME + 32];
+    static char  info[96];
+    static char  name_field[FT_MAX_FILENAME + 32];
     int   name_len;
     int   info_len;
     int   pad;
@@ -200,7 +200,7 @@ static void draw_ruler(FtEditor *ed)
  */
 static void draw_soft_sep(FtEditor *ed, int display_row, int page_num)
 {
-    char label[48];
+    static char label[48];
     int  tot_pages = (ed->buf.num_lines + ed->paper_lines - 1) / ed->paper_lines;
     int  label_len, left, right, i;
 
@@ -375,7 +375,7 @@ static void draw_rows(FtEditor *ed)
  */
 static void draw_footer(FtEditor *ed)
 {
-    char        hotkeys[256];
+    static char hotkeys[256];
     const char *wrap_indicator;
     int         hlen;
     int         pad;
@@ -516,7 +516,7 @@ static int ft_prompt(FtEditor *ed, const char *prompt_text,
 
 static void cmd_save(FtEditor *ed)
 {
-    char fname[FT_MAX_FILENAME];
+    static char fname[FT_MAX_FILENAME];
 
     if (!ed->filename[0]) {
         if (ft_prompt(ed, "Save as: ", fname, FT_MAX_FILENAME) <= 0)
@@ -535,7 +535,7 @@ static void cmd_save(FtEditor *ed)
 
 static void cmd_load(FtEditor *ed)
 {
-    char fname[FT_MAX_FILENAME];
+    static char fname[FT_MAX_FILENAME];
 
     if (ft_prompt(ed, "Open file: ", fname, FT_MAX_FILENAME) <= 0)
         return;
@@ -611,7 +611,7 @@ static void cmd_paste(FtEditor *ed)
 
 static void cmd_find(FtEditor *ed)
 {
-    char   needle[256];
+    static char needle[256];
     int    start_row;
     int    r;
     char  *p;
