@@ -27,6 +27,34 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*
+ * cc65's Atari conio.h (and possibly others) pre-defines KEY_UP, KEY_DOWN,
+ * KEY_LEFT, KEY_RIGHT, KEY_DELETE, KEY_F1-F4, KEY_CTRL_L etc. with target-
+ * specific raw key codes that differ from our platform-neutral values in
+ * platform.h.  Undefine them all before including platform.h so our values
+ * win, and the compiler does not report "Macro redefinition is not identical".
+ */
+#undef KEY_UP
+#undef KEY_DOWN
+#undef KEY_LEFT
+#undef KEY_RIGHT
+#undef KEY_HOME
+#undef KEY_END
+#undef KEY_DELETE
+#undef KEY_INSERT
+#undef KEY_BACKSPACE
+#undef KEY_CTRL_L
+#undef KEY_F1
+#undef KEY_F2
+#undef KEY_F3
+#undef KEY_F4
+#undef KEY_F5
+#undef KEY_F6
+#undef KEY_F7
+#undef KEY_F8
+#undef KEY_F9
+#undef KEY_F10
+
 #include "platform.h"
 
 /* ------------------------------------------------------------------ */
@@ -188,12 +216,18 @@ void platform_putn(const char *s, int n)
 
 void platform_clear_eol(void)
 {
-    /*
-     * cc65's cclreol() clears from the current position to end of line.
-     * It is available on most cc65 targets.
-     */
+    unsigned char x;
     buf_flush_6502();
-    cclreol();
+    /*
+     * cclreol() is not available in all cc65 target libraries.  Use wherex()
+     * and write spaces to the end of the line instead — portable across all
+     * cc65 targets.
+     */
+    x = wherex();
+    while (x < ft_cols) {
+        cputc(' ');
+        x++;
+    }
 }
 
 void platform_clear_screen(void)
