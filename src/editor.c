@@ -1001,11 +1001,14 @@ static void process_key(FtEditor *ed, int key)
             break;
 
         case KEY_LEFT:
-            if (ed->cursor_col > 0) {
-                ed->cursor_col--;
-            } else if (ed->cursor_row > 0) {
-                ed->cursor_row--;
-                ed->cursor_col = ed->buf.lines[ed->cursor_row].len;
+            {
+                int min_col = (ed->indent_left > 0) ? ed->indent_left : 0;
+                if (ed->cursor_col > min_col) {
+                    ed->cursor_col--;
+                } else if (min_col == 0 && ed->cursor_row > 0) {
+                    ed->cursor_row--;
+                    ed->cursor_col = ed->buf.lines[ed->cursor_row].len;
+                }
             }
             break;
 
@@ -1020,7 +1023,7 @@ static void process_key(FtEditor *ed, int key)
             break;
 
         case KEY_HOME:
-            ed->cursor_col = 0;
+            ed->cursor_col = (ed->indent_left > 0) ? ed->indent_left : 0;
             break;
 
         case KEY_END:
@@ -1064,15 +1067,18 @@ static void process_key(FtEditor *ed, int key)
 
         case KEY_BACKSPACE:
             if (ed->cursor_col > 0) {
-                ed->cursor_col--;
-                ft_buffer_delete_char(&ed->buf, ed->cursor_row, ed->cursor_col);
-            } else if (ed->cursor_row > 0) {
+                if (ed->indent_left == 0 || ed->cursor_col > ed->indent_left) {
+                    ed->cursor_col--;
+                    ft_buffer_delete_char(&ed->buf, ed->cursor_row, ed->cursor_col);
+                    ed->dirty = 1;
+                }
+            } else if (ed->cursor_row > 0 && ed->indent_left == 0) {
                 int prev_len = ed->buf.lines[ed->cursor_row - 1].len;
                 ft_buffer_join_lines(&ed->buf, ed->cursor_row - 1);
                 ed->cursor_row--;
                 ed->cursor_col = prev_len;
+                ed->dirty = 1;
             }
-            ed->dirty = 1;
             break;
 
         case KEY_DELETE:
