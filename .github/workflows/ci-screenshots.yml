@@ -198,8 +198,9 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest
-          cp forever-text-dos16.exe dostest/
-          cat > dosbox16.conf << 'EOF'
+          cp forever-text-dos16.exe dostest/ft16.exe
+          DOSTEST="$(pwd)/dostest"
+          cat > dosbox16.conf << EOF
           [cpu]
           core=auto
           cycles=50000
@@ -213,9 +214,9 @@ jobs:
           sbtype=none
 
           [autoexec]
-          mount c dostest
+          mount c $DOSTEST
           c:
-          forever-text-dos16.exe
+          ft16.exe
           EOF
 
           dosbox -conf dosbox16.conf &
@@ -368,8 +369,9 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest32
-          cp forever-text-dos32.exe dostest32/
-          cat > dosbox32.conf << 'EOF'
+          cp forever-text-dos32.exe dostest32/ft32.exe
+          DOSTEST32="$(pwd)/dostest32"
+          cat > dosbox32.conf << EOF
           [cpu]
           core=auto
           cycles=50000
@@ -383,9 +385,9 @@ jobs:
           sbtype=none
 
           [autoexec]
-          mount c dostest32
+          mount c $DOSTEST32
           c:
-          forever-text-dos32.exe
+          ft32.exe
           EOF
 
           dosbox -conf dosbox32.conf &
