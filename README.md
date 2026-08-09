@@ -126,20 +126,22 @@ Direct links for each architecture:
 
 | Target | File |
 |---|---|
-| DOS 16-bit real mode (ia16) | [forever-text-dos16.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-dos16.exe) |
-| DOS 32-bit protected mode (DJGPP) | [forever-text-dos32.exe](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-dos32.exe) |
+| DOS 16-bit real mode (ia16) | [ft16.exe](https://github.com/sormondocom/forever-text/releases/download/latest/ft16.exe) |
+| DOS 32-bit protected mode (DJGPP) | [ft32.exe](https://github.com/sormondocom/forever-text/releases/download/latest/ft32.exe) |
+
+Names are 8.3-compatible so the binaries work directly on real DOS without renaming.
 
 ### 8-bit / Vintage
 
 | Target | File | Format |
 |---|---|---|
-| Commodore 64 | [forever-text-c64.prg](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-c64.prg) | PRG — `LOAD"*",8,1` then `RUN` |
-| Atari 400/800/XL/XE | [forever-text-atari8.xex](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-atari8.xex) | XEX — load in Atari800 emulator |
-| Apple IIe enhanced | [forever-text-apple2](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-apple2) | Binary — load in AppleWin / linapple |
+| Commodore 64 | [ft-c64.prg](https://github.com/sormondocom/forever-text/releases/download/latest/ft-c64.prg) | PRG — `LOAD"*",8,1` then `RUN` |
+| Atari 400/800/XL/XE | [ft-a8.xex](https://github.com/sormondocom/forever-text/releases/download/latest/ft-a8.xex) | XEX — load in Atari800 emulator |
+| Apple IIe enhanced | [ft-apple2](https://github.com/sormondocom/forever-text/releases/download/latest/ft-apple2) | Binary — load in AppleWin / linapple |
 | Amiga 68k | [forever-text-amiga](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-amiga) | AmigaOS HUNK — run in FS-UAE / WinUAE |
-| Atari ST / TT / Falcon | [forever-text-atarist.tos](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-atarist.tos) | TOS/MiNT — run in Hatari / ARAnyM |
-| TRS-80 Model III Z80 (Intel HEX) | [forever-text-trs80.ihx](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-trs80.ihx) | Intel HEX — for flashing / sdltrs |
-| TRS-80 Model III Z80 (CMD binary) | [forever-text-trs80.cmd](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-trs80.cmd) | CMD — loadable from TRSDOS / trs80gp |
+| Atari ST / TT / Falcon | [ft-st.tos](https://github.com/sormondocom/forever-text/releases/download/latest/ft-st.tos) | TOS/MiNT — run in Hatari / ARAnyM |
+| TRS-80 Model III Z80 (Intel HEX) | [ft-80.ihx](https://github.com/sormondocom/forever-text/releases/download/latest/ft-80.ihx) | Intel HEX — for flashing / sdltrs |
+| TRS-80 Model III Z80 (CMD binary) | [ft-80.cmd](https://github.com/sormondocom/forever-text/releases/download/latest/ft-80.cmd) | CMD — loadable from TRSDOS / trs80gp |
 | TI-99/4A TMS9900 ⚠ Experimental | [forever-text-ti99.bin](https://github.com/sormondocom/forever-text/releases/download/latest/forever-text-ti99.bin) | BIN — run in Classic99 / MAME ti99_4a |
 
 > Links always point to the build from the latest `main` commit.
@@ -854,7 +856,7 @@ sudo apt install gcc-ia16-elf
 ia16-elf-gcc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
     -mcmodel=small \
     -Isrc \
-    -o forever-text-dos16.exe \
+    -o ft16.exe \
     src/main.c src/editor.c src/buffer.c src/platform/bios.c \
     -li86
 ```
@@ -911,7 +913,7 @@ Ubuntu repositories.
 
 i586-pc-msdosdjgpp-gcc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
     -Isrc \
-    -o forever-text-dos32.exe \
+    -o ft32.exe \
     src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
     -static
 ```
@@ -963,7 +965,7 @@ sudo apt install cc65
 
 cl65 -std=c89 -Wall -Werror -Os -t c64 \
     -Isrc \
-    -o forever-text-c64.prg \
+    -o ft-c64.prg \
     src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 ```
 
@@ -1015,7 +1017,7 @@ sudo apt install cc65
 
 cl65 -std=c89 -Wall -Werror -Os -t atari \
     -Isrc \
-    -o forever-text-atari8.xex \
+    -o ft-a8.xex \
     src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 ```
 
@@ -1023,7 +1025,7 @@ cl65 -std=c89 -Wall -Werror -Os -t atari \
 make atari8
 ```
 
-Load `forever-text-atari8.xex` in Atari800 or on real hardware.
+Load `ft-a8.xex` in Atari800 or on real hardware.
 
 **Latest CI screenshot** *(best-effort — uses AltirraOS or HLE mode)*:
 
@@ -1060,7 +1062,7 @@ sudo apt install cc65
 
 cl65 -std=c89 -Wall -Werror -Os -t apple2enh \
     -Isrc \
-    -o forever-text-apple2 \
+    -o ft-apple2 \
     src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 ```
 
@@ -1172,7 +1174,7 @@ Control Sequence Introducer) as a shorthand for the two-byte `ESC [` pair.
 
 m68k-atari-mint-gcc -std=c89 -pedantic -Wall -Wextra -Werror -Os \
     -Isrc \
-    -o forever-text-atarist.tos \
+    -o ft-st.tos \
     src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
     -static
 ```
@@ -1229,18 +1231,18 @@ sudo apt install sdcc binutils
 sdcc --std-c89 -mz80 \
     -Isrc \
     --code-loc 0x5200 --data-loc 0x5C00 \
-    -o forever-text-trs80.ihx \
+    -o ft-80.ihx \
     src/main.c src/editor.c src/buffer.c src/platform/z80.c
 
 objcopy -I ihex -O binary \
-    forever-text-trs80.ihx forever-text-trs80.cmd
+    ft-80.ihx ft-80.cmd
 ```
 
 ```sh
 make trs80
 ```
 
-Load `forever-text-trs80.cmd` in sdltrs or trs80gp.
+Load `ft-80.cmd` in sdltrs or trs80gp.
 
 **Latest CI screenshot** *(best-effort — requires TRS-80 Model III ROM)*:
 
@@ -1522,8 +1524,8 @@ request.
 Every CI run produces downloadable artifacts for each target:
 - `forever-text-linux-x86_64`
 - `forever-text-{m68k,sparc,ppc,mips,mipsel,s390x,riscv64,arm,arm64}`
-- `forever-text-dos16` (editor + unit test binary, `.exe`)
-- `forever-text-dos32` (editor + unit test binary, `.exe`)
+- `forever-text-dos16` artifact: `ft16.exe` (editor) + `tb16.exe` (unit tests)
+- `forever-text-dos32` artifact: `ft32.exe` (editor) + `tb32.exe` (unit tests)
 
 DOS artifacts can be run directly in DOSBox or DOSBox-X.
 
