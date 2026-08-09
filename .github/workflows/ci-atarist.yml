@@ -37,7 +37,7 @@ jobs:
           m68k-atari-mint-gcc \
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o forever-text-atarist.tos \
+            -o ft-st.tos \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
             -static
 
@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: forever-text-atarist
-          path: forever-text-atarist.tos
+          path: ft-st.tos
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -55,4 +55,4 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-atarist.tos
+          files: ft-st.tos

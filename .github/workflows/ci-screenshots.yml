@@ -137,7 +137,7 @@ jobs:
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -mcmodel=small \
             -Isrc \
-            -o forever-text-dos16.exe \
+            -o ft16.exe \
             src/main.c src/editor.c src/buffer.c src/platform/bios.c \
             -li86
 
@@ -147,7 +147,7 @@ jobs:
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -mcmodel=small \
             -Isrc \
-            -o test-buffer-dos16.exe \
+            -o tb16.exe \
             tests/test_buffer.c src/buffer.c \
             -li86
 
@@ -162,7 +162,8 @@ jobs:
         # step is skipped, so a screenshot in the release proves tests passed.
         run: |
           mkdir -p dostest
-          cp test-buffer-dos16.exe dostest/
+          cp tb16.exe dostest/
+          DOSTEST="$(pwd)/dostest"
           cat > dosbox-test16.conf << 'EOF'
           [cpu]
           core=auto
@@ -175,19 +176,17 @@ jobs:
 
           [sblaster]
           sbtype=none
-
-          [autoexec]
-          mount c dostest
-          c:
-          test-buffer-dos16.exe > results.txt
-          exit
           EOF
 
           Xvfb :99 -screen 0 1024x768x24 -ac &
           XVFB_PID=$!
           sleep 1
           export DISPLAY=:99
-          timeout 90 dosbox -conf dosbox-test16.conf
+          timeout 90 dosbox -conf dosbox-test16.conf \
+            -c "mount c $DOSTEST" \
+            -c "c:" \
+            -c "tb16.exe > results.txt" \
+            -c "exit"
           echo "--- DOS 16-bit test output ---"
           cat dostest/results.txt
           grep -q "0 failed" dostest/results.txt
@@ -198,7 +197,7 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest
-          cp forever-text-dos16.exe dostest/editor.exe
+          cp ft16.exe dostest/
           DOSTEST="$(pwd)/dostest"
           cat > dosbox16.conf << 'EOF'
           [cpu]
@@ -217,7 +216,7 @@ jobs:
           dosbox -conf dosbox16.conf \
             -c "mount c $DOSTEST" \
             -c "c:" \
-            -c "editor.exe" &
+            -c "ft16.exe" &
           DOSBOX_PID=$!
           sleep 20
 
@@ -297,7 +296,7 @@ jobs:
           i586-pc-msdosdjgpp-gcc \
             -std=gnu89 -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o forever-text-dos32.exe \
+            -o ft32.exe \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
             -static
 
@@ -306,7 +305,7 @@ jobs:
           i586-pc-msdosdjgpp-gcc \
             -std=gnu89 -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o test-buffer-dos32.exe \
+            -o tb32.exe \
             tests/test_buffer.c src/buffer.c \
             -static
 
@@ -320,7 +319,8 @@ jobs:
         # stdout redirection to RESULTS.TXT works via DOSBox's DOS shell.
         run: |
           mkdir -p dostest32
-          cp test-buffer-dos32.exe dostest32/
+          cp tb32.exe dostest32/
+          DOSTEST32="$(pwd)/dostest32"
           cat > dosbox-test32.conf << 'EOF'
           [cpu]
           core=auto
@@ -333,19 +333,17 @@ jobs:
 
           [sblaster]
           sbtype=none
-
-          [autoexec]
-          mount c dostest32
-          c:
-          test-buffer-dos32.exe > results.txt
-          exit
           EOF
 
           Xvfb :99 -screen 0 1024x768x24 -ac &
           XVFB_PID=$!
           sleep 1
           export DISPLAY=:99
-          timeout 90 dosbox -conf dosbox-test32.conf || true
+          timeout 90 dosbox -conf dosbox-test32.conf \
+            -c "mount c $DOSTEST32" \
+            -c "c:" \
+            -c "tb32.exe > results.txt" \
+            -c "exit" || true
           echo "--- DOS 32-bit test output ---"
           # DJGPP (32-bit protected mode) initialises file descriptors via DPMI
           # and does not inherit the DOSBox shell redirect; the results file may
@@ -367,7 +365,7 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest32
-          cp forever-text-dos32.exe dostest32/editor.exe
+          cp ft32.exe dostest32/
           DOSTEST32="$(pwd)/dostest32"
           cat > dosbox32.conf << 'EOF'
           [cpu]
@@ -386,7 +384,7 @@ jobs:
           dosbox -conf dosbox32.conf \
             -c "mount c $DOSTEST32" \
             -c "c:" \
-            -c "editor.exe" &
+            -c "ft32.exe" &
           DOSBOX_PID=$!
           sleep 20
 
@@ -448,7 +446,7 @@ jobs:
         run: |
           cl65 -Os -t c64 \
             -Isrc \
-            -o forever-text-c64.prg \
+            -o ft-c64.prg \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Run VICE and capture screenshot
@@ -458,7 +456,7 @@ jobs:
           export DISPLAY=:99
           x64sc \
             -autostartprgmode 1 \
-            -autostart forever-text-c64.prg \
+            -autostart ft-c64.prg \
             &
           C64_PID=$!
           # C64 ROM startup + BASIC load takes ~15 s; allow 30 s for safety
@@ -527,7 +525,7 @@ jobs:
         run: |
           cl65 -Os -t atari \
             -Isrc \
-            -o forever-text-atari8.xex \
+            -o ft-a8.xex \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Run Atari800 and capture screenshot
@@ -540,9 +538,9 @@ jobs:
           if [ -f "$XLROM" ] && [ -f "$BASROM" ]; then
             atari800 -xl -nobasic \
               -osb_rom "$XLROM" -basic_rom "$BASROM" \
-              -run forever-text-atari8.xex &
+              -run ft-a8.xex &
           else
-            atari800 -xl -nobasic -hle -run forever-text-atari8.xex &
+            atari800 -xl -nobasic -hle -run ft-a8.xex &
           fi
           ATARI_PID=$!
           sleep 25
@@ -608,13 +606,13 @@ jobs:
         run: |
           cl65 -Os -t apple2enh \
             -Isrc \
-            -o forever-text-apple2 \
+            -o ft-apple2 \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Stage ROM and binary for LinApple
         run: |
           mkdir -p apple2-disk
-          cp forever-text-apple2 apple2-disk/FOREVERTEXT
+          cp ft-apple2 apple2-disk/FOREVERTEXT
           ROM="ci-assets/emulator-roms/apple2/apple2e.rom"
           if [ -f "$ROM" ]; then
             mkdir -p ~/.linapple
@@ -684,7 +682,7 @@ jobs:
           m68k-atari-mint-gcc \
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o forever-text-atarist.tos \
+            -o ft-st.tos \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
             -static
 
@@ -706,7 +704,7 @@ jobs:
             --tos "$EMUTOS_ROM" \
             --machine st \
             --no-gui \
-            forever-text-atarist.tos \
+            ft-st.tos \
             &
           HATARI_PID=$!
           sleep 40
@@ -867,10 +865,10 @@ jobs:
             -Isrc \
             --code-loc 0x5200 --data-loc 0x5C00 \
             --out-fmt-ihx \
-            -o forever-text-trs80.ihx \
+            -o ft-80.ihx \
             src/main.c editor.rel buffer.rel z80.rel
           objcopy -I ihex -O binary \
-            forever-text-trs80.ihx forever-text-trs80.cmd
+            ft-80.ihx ft-80.cmd
 
       - name: Run sdltrs and capture screenshot
         run: |
@@ -880,9 +878,9 @@ jobs:
           ROM="ci-assets/emulator-roms/trs80/model3.rom"
           if [ -f "$ROM" ]; then
             sdltrs -model 3 -scale 2 -romfile3 "$ROM" \
-              -cmd forever-text-trs80.cmd &
+              -cmd ft-80.cmd &
           else
-            sdltrs -model 3 -scale 2 -cmd forever-text-trs80.cmd &
+            sdltrs -model 3 -scale 2 -cmd ft-80.cmd &
           fi
           TRS_PID=$!
           sleep 20

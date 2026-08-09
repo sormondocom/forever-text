@@ -18,6 +18,11 @@ permissions:
 # dos32  — 32-bit protected-mode DOS (DJGPP, prebuilt download)
 #           Uses the ANSI platform layer.
 #           Requires CWSDPMI or HDPMI32 DOS extender on the target.
+#
+# Output names use short 8.3-compatible names so the binaries work
+# directly on real DOS (FAT filesystem) without renaming:
+#   ft16.exe / tb16.exe  (16-bit)
+#   ft32.exe / tb32.exe  (32-bit)
 # -----------------------------------------------------------------------
 
 jobs:
@@ -44,7 +49,7 @@ jobs:
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -mcmodel=small \
             -Isrc \
-            -o forever-text-dos16.exe \
+            -o ft16.exe \
             src/main.c src/editor.c src/buffer.c src/platform/bios.c \
             -li86
 
@@ -54,7 +59,7 @@ jobs:
             -std=c89 -pedantic -Wall -Wextra -Werror -Os \
             -mcmodel=small \
             -Isrc \
-            -o test-buffer-dos16.exe \
+            -o tb16.exe \
             tests/test_buffer.c src/buffer.c \
             -li86
 
@@ -63,8 +68,8 @@ jobs:
         with:
           name: forever-text-dos16
           path: |
-            forever-text-dos16.exe
-            test-buffer-dos16.exe
+            ft16.exe
+            tb16.exe
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -74,7 +79,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-dos16.exe
+          files: ft16.exe
 
   # =====================================================================
   # 32-bit protected-mode DOS — DJGPP
@@ -112,7 +117,7 @@ jobs:
           i586-pc-msdosdjgpp-gcc \
             -std=gnu89 -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o forever-text-dos32.exe \
+            -o ft32.exe \
             src/main.c src/editor.c src/buffer.c src/platform/ansi.c \
             -static
 
@@ -121,7 +126,7 @@ jobs:
           i586-pc-msdosdjgpp-gcc \
             -std=gnu89 -Wall -Wextra -Werror -Os \
             -Isrc \
-            -o test-buffer-dos32.exe \
+            -o tb32.exe \
             tests/test_buffer.c src/buffer.c \
             -static
 
@@ -130,8 +135,8 @@ jobs:
         with:
           name: forever-text-dos32
           path: |
-            forever-text-dos32.exe
-            test-buffer-dos32.exe
+            ft32.exe
+            tb32.exe
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -141,4 +146,4 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-dos32.exe
+          files: ft32.exe

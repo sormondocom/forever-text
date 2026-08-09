@@ -16,10 +16,10 @@ permissions:
 # selected at compile time via cc65's preprocessor macros
 # (__C64__, __ATARI__, __APPLE2ENH__).
 #
-# Artifacts:
-#   .prg  — Commodore 64 PRG file (load with LOAD"*",8,1 on real HW)
-#   .xex  — Atari 8-bit executable (loadable in Atari800 emulator)
-#   binary — Apple II binary (loadable in AppleWin or linapple)
+# Output names respect each platform's filesystem limits:
+#   ft-c64.prg  — Commodore 64 (CBM DOS 16-char limit)
+#   ft-a8.xex   — Atari 8-bit  (Atari DOS 8.3 limit)
+#   ft-apple2   — Apple IIe    (ProDOS 15-char limit)
 #
 # Compile-only: no emulator is available in CI for 6502 hardware.
 # Use VICE (C64), Atari800 (Atari), or AppleWin (Apple II) to run.
@@ -39,14 +39,14 @@ jobs:
         run: |
           cl65 -Os -t c64 \
             -Isrc \
-            -o forever-text-c64.prg \
+            -o ft-c64.prg \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Upload C64 binary
         uses: actions/upload-artifact@v4
         with:
           name: forever-text-c64
-          path: forever-text-c64.prg
+          path: ft-c64.prg
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -56,7 +56,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-c64.prg
+          files: ft-c64.prg
 
   atari-8bit:
     name: Atari 8-bit (cc65)
@@ -71,14 +71,14 @@ jobs:
         run: |
           cl65 -Os -t atari \
             -Isrc \
-            -o forever-text-atari8.xex \
+            -o ft-a8.xex \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Upload Atari 8-bit binary
         uses: actions/upload-artifact@v4
         with:
           name: forever-text-atari8
-          path: forever-text-atari8.xex
+          path: ft-a8.xex
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -88,7 +88,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-atari8.xex
+          files: ft-a8.xex
 
   apple-ii:
     name: Apple II enhanced (cc65)
@@ -103,14 +103,14 @@ jobs:
         run: |
           cl65 -Os -t apple2enh \
             -Isrc \
-            -o forever-text-apple2 \
+            -o ft-apple2 \
             src/main.c src/editor.c src/buffer.c src/platform/conio6502.c
 
       - name: Upload Apple II binary
         uses: actions/upload-artifact@v4
         with:
           name: forever-text-apple2
-          path: forever-text-apple2
+          path: ft-apple2
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -120,4 +120,4 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: forever-text-apple2
+          files: ft-apple2

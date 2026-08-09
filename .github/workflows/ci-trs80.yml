@@ -43,21 +43,21 @@ jobs:
             -Isrc \
             --code-loc 0x5200 --data-loc 0x5C00 \
             --out-fmt-ihx \
-            -o forever-text-trs80.ihx \
+            -o ft-80.ihx \
             src/main.c editor.rel buffer.rel z80.rel
 
       - name: Convert to TRS-80 CMD binary
         run: |
           objcopy -I ihex -O binary \
-            forever-text-trs80.ihx forever-text-trs80.cmd
+            ft-80.ihx ft-80.cmd
 
       - name: Upload TRS-80 artifacts
         uses: actions/upload-artifact@v4
         with:
           name: forever-text-trs80
           path: |
-            forever-text-trs80.ihx
-            forever-text-trs80.cmd
+            ft-80.ihx
+            ft-80.cmd
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -68,5 +68,5 @@ jobs:
           make_latest: false
           body: "Built automatically from `main` on every push."
           files: |
-            forever-text-trs80.ihx
-            forever-text-trs80.cmd
+            ft-80.ihx
+            ft-80.cmd
