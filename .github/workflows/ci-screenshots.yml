@@ -198,9 +198,9 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest
-          cp forever-text-dos16.exe dostest/ft16.exe
+          cp forever-text-dos16.exe dostest/editor.exe
           DOSTEST="$(pwd)/dostest"
-          cat > dosbox16.conf << EOF
+          cat > dosbox16.conf << 'EOF'
           [cpu]
           core=auto
           cycles=50000
@@ -212,14 +212,12 @@ jobs:
 
           [sblaster]
           sbtype=none
-
-          [autoexec]
-          mount c $DOSTEST
-          c:
-          ft16.exe
           EOF
 
-          dosbox -conf dosbox16.conf &
+          dosbox -conf dosbox16.conf \
+            -c "mount c $DOSTEST" \
+            -c "c:" \
+            -c "editor.exe" &
           DOSBOX_PID=$!
           sleep 20
 
@@ -369,9 +367,9 @@ jobs:
         run: |
           export DISPLAY=:99
           mkdir -p dostest32
-          cp forever-text-dos32.exe dostest32/ft32.exe
+          cp forever-text-dos32.exe dostest32/editor.exe
           DOSTEST32="$(pwd)/dostest32"
-          cat > dosbox32.conf << EOF
+          cat > dosbox32.conf << 'EOF'
           [cpu]
           core=auto
           cycles=50000
@@ -383,14 +381,12 @@ jobs:
 
           [sblaster]
           sbtype=none
-
-          [autoexec]
-          mount c $DOSTEST32
-          c:
-          ft32.exe
           EOF
 
-          dosbox -conf dosbox32.conf &
+          dosbox -conf dosbox32.conf \
+            -c "mount c $DOSTEST32" \
+            -c "c:" \
+            -c "editor.exe" &
           DOSBOX_PID=$!
           sleep 20
 
