@@ -85,13 +85,16 @@ jobs:
           TAPE
 
       - name: Render screenshot
-        run: vhs screen.tape
+        run: |
+          vhs screen.tape
+          SHA8="${GITHUB_SHA:0:8}"
+          mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
 
       - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-macos
-          path: screenshot-macos.png
+          path: screenshot-macos-*.png
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v4
@@ -108,7 +111,7 @@ jobs:
           make_latest: false
           body: "Built automatically from `main` on every push."
           files: |
-            screenshot-macos.png
+            screenshot-macos-*.png
             test-results-macos.txt
 
   # =======================================================================
@@ -239,13 +242,14 @@ jobs:
             scrot screenshot-dos16.png
           fi
 
+          mv screenshot-dos16.png "screenshot-dos16-${SHA8}.png"
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos16
-          path: screenshot-dos16.png
+          path: screenshot-dos16-*.png
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v4
@@ -262,7 +266,7 @@ jobs:
           make_latest: false
           body: "Built automatically from `main` on every push."
           files: |
-            screenshot-dos16.png
+            screenshot-dos16-*.png
             test-results-dos16.txt
 
   # =======================================================================
@@ -408,13 +412,14 @@ jobs:
             scrot screenshot-dos32.png
           fi
 
+          mv screenshot-dos32.png "screenshot-dos32-${SHA8}.png"
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos32
-          path: screenshot-dos32.png
+          path: screenshot-dos32-*.png
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v4
@@ -431,7 +436,7 @@ jobs:
           make_latest: false
           body: "Built automatically from `main` on every push."
           files: |
-            screenshot-dos32.png
+            screenshot-dos32-*.png
             test-results-dos32.txt
 
   # =======================================================================
@@ -480,13 +485,14 @@ jobs:
           else
             scrot screenshot-c64.png
           fi
+          mv screenshot-c64.png "screenshot-c64-${SHA8}.png"
           kill $C64_PID 2>/dev/null || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-c64
-          path: screenshot-c64.png
+          path: screenshot-c64-*.png
 
       - name: Publish to rolling release
         uses: softprops/action-gh-release@v2
@@ -496,7 +502,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-c64.png
+          files: screenshot-c64-*.png
 
   # =======================================================================
   # Atari 8-bit — cc65 + Atari800 + Xvfb
@@ -562,6 +568,7 @@ jobs:
           else
             scrot screenshot-atari8.png
           fi
+          mv screenshot-atari8.png "screenshot-atari8-${SHA8}.png"
           kill $ATARI_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -569,7 +576,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-atari8
-          path: screenshot-atari8.png
+          path: screenshot-atari8-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -580,7 +587,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-atari8.png
+          files: screenshot-atari8-*.png
 
   # =======================================================================
   # Apple IIe — cc65 + LinApple + Xvfb
@@ -647,6 +654,7 @@ jobs:
           else
             scrot screenshot-apple2.png
           fi
+          mv screenshot-apple2.png "screenshot-apple2-${SHA8}.png"
           kill $APPLE_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -654,7 +662,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-apple2
-          path: screenshot-apple2.png
+          path: screenshot-apple2-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -665,7 +673,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-apple2.png
+          files: screenshot-apple2-*.png
 
   # =======================================================================
   # Atari ST — m68k-atari-mint-gcc + Hatari + EmuTOS + Xvfb
@@ -728,6 +736,7 @@ jobs:
           else
             scrot screenshot-atarist.png
           fi
+          mv screenshot-atarist.png "screenshot-atarist-${SHA8}.png"
           kill $HATARI_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -735,7 +744,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-atarist
-          path: screenshot-atarist.png
+          path: screenshot-atarist-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -746,7 +755,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-atarist.png
+          files: screenshot-atarist-*.png
 
   # =======================================================================
   # Amiga 68k — amiga-gcc (Docker) + FS-UAE + Xvfb
@@ -820,6 +829,7 @@ jobs:
           else
             scrot screenshot-amiga.png
           fi
+          mv screenshot-amiga.png "screenshot-amiga-${SHA8}.png"
           kill $FSUAE_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -827,7 +837,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-amiga
-          path: screenshot-amiga.png
+          path: screenshot-amiga-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -838,7 +848,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-amiga.png
+          files: screenshot-amiga-*.png
 
   # =======================================================================
   # TRS-80 Model III — SDCC Z80 + sdltrs + Xvfb
@@ -907,6 +917,7 @@ jobs:
           else
             scrot screenshot-trs80.png
           fi
+          mv screenshot-trs80.png "screenshot-trs80-${SHA8}.png"
           kill $TRS_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -914,7 +925,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-trs80
-          path: screenshot-trs80.png
+          path: screenshot-trs80-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -925,7 +936,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-trs80.png
+          files: screenshot-trs80-*.png
 
   # =======================================================================
   # TI-99/4A — tms9900-gcc + MAME + Xvfb
@@ -1021,12 +1032,14 @@ jobs:
                 xdotool search --class "mame64" 2>/dev/null | head -1 || \
                 xdotool search --name "MAME" 2>/dev/null | head -1 || \
                 xdotool search --name "ti99" 2>/dev/null | head -1)
+          SHA8="${GITHUB_SHA:0:8}"
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-ti99.png 2>/dev/null || scrot -u screenshot-ti99.png
           else
             scrot screenshot-ti99.png
           fi
+          mv screenshot-ti99.png "screenshot-ti99-${SHA8}.png"
           kill $MAME_PID 2>/dev/null || true
 
       - name: Upload artifact
@@ -1034,7 +1047,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-ti99
-          path: screenshot-ti99.png
+          path: screenshot-ti99-*.png
 
       - name: Publish to rolling release
         if: always()
@@ -1045,7 +1058,7 @@ jobs:
           prerelease: true
           make_latest: false
           body: "Built automatically from `main` on every push."
-          files: screenshot-ti99.png
+          files: screenshot-ti99-*.png
 
   # =======================================================================
   # Stamp the 8-char commit SHA into the README so screenshots and README
@@ -1068,8 +1081,13 @@ jobs:
       - name: Update build SHA in README
         run: |
           SHA8="${GITHUB_SHA:0:8}"
+          # Stamp commit hash into every SHA placeholder (badge line + Screenshots URLs)
           sed -i \
-            "s/Built from commit \`[0-9a-f]\{8\}\` on \`main\`/Built from commit \`${SHA8}\` on \`main\`/" \
+            "s/commit \`[0-9a-f]\{8\}\`/commit \`${SHA8}\`/g" \
+            README.md
+          # Rewrite all SHA-tagged screenshot filenames to the new SHA
+          sed -i \
+            "s/screenshot-\([a-z0-9]*\)-[0-9a-f]\{8\}\.png/screenshot-\1-${SHA8}.png/g" \
             README.md
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"

@@ -289,8 +289,9 @@ jobs:
 
       - name: Rename binary, screenshot, and test results for release
         run: |
+          SHA8="${GITHUB_SHA:0:8}"
           cp forever-text forever-text-linux-x86_64
-          cp proof/png/screenshot_01_startup.png screenshot-linux.png
+          cp proof/png/screenshot_01_startup.png "screenshot-linux-${SHA8}.png"
           cp unit_test_output.txt test-results-linux.txt
 
       - name: Publish to rolling release
@@ -303,5 +304,5 @@ jobs:
           body: "Built automatically from `main` on every push."
           files: |
             forever-text-linux-x86_64
-            screenshot-linux.png
+            screenshot-linux-*.png
             test-results-linux.txt

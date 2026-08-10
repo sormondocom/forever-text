@@ -37,6 +37,35 @@ Each target family has its own pipeline so failures are immediately visible.
 > and has no stable prebuilt release.  Its badge may be red without blocking
 > other pipelines.
 
+> **Latest screenshots:** built from commit `00000000` on `main` · [view release →](https://github.com/sormondocom/forever-text/releases/tag/latest)
+
+---
+
+## Screenshots
+
+All screenshots are captured automatically on every push to `main`.
+The 8-character commit hash visible inside each image matches the hash above.
+
+### Desktop and DOS
+
+| Linux x86-64 | macOS Apple Silicon |
+|---|---|
+| [![Linux](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-00000000.png) | [![macOS](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-00000000.png) |
+
+| DOS 16-bit real mode | DOS 32-bit protected mode |
+|---|---|
+| [![DOS 16](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-00000000.png) | [![DOS 32](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-00000000.png) |
+
+### 8-bit and Vintage
+
+| Commodore 64 | Atari 400/800/XL/XE | Apple IIe enhanced |
+|---|---|---|
+| [![C64](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-00000000.png) | [![Atari 8](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-00000000.png) | [![Apple IIe](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-00000000.png) |
+
+| Amiga 68k | Atari ST | TRS-80 Model III | TI-99/4A |
+|---|---|---|---|
+| [![Amiga](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-00000000.png) | [![Atari ST](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-00000000.png) | [![TRS-80](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-00000000.png) | [![TI-99/4A](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-00000000.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-00000000.png) |
+
 ---
 
 ## Platform Matrix
@@ -51,10 +80,10 @@ step only runs after the test step succeeds.
 
 | Platform | Architecture | Tests | Results | Screenshot |
 |---|---|---|---|---|
-| Linux x86-64 | x86-64 | 74/74 — native | [test-results-linux.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-linux.txt) | [screenshot-linux.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png) |
-| macOS Apple Silicon | AArch64 | 74/74 — native | [test-results-macos.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-macos.txt) | [screenshot-macos.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png) |
-| DOS 16-bit real mode | 8086 | 74/74 — in DOSBox | [test-results-dos16.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos16.txt) | [screenshot-dos16.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png) |
-| DOS 32-bit protected mode | 386 | 74/74 — in DOSBox | [test-results-dos32.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos32.txt) | [screenshot-dos32.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png) |
+| Linux x86-64 | x86-64 | 74/74 — native | [test-results-linux.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-linux.txt) | [screenshot-linux-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-00000000.png) |
+| macOS Apple Silicon | AArch64 | 74/74 — native | [test-results-macos.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-macos.txt) | [screenshot-macos-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-00000000.png) |
+| DOS 16-bit real mode | 8086 | 74/74 — in DOSBox | [test-results-dos16.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos16.txt) | [screenshot-dos16-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-00000000.png) |
+| DOS 32-bit protected mode | 386 | 74/74 — in DOSBox | [test-results-dos32.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos32.txt) | [screenshot-dos32-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-00000000.png) |
 
 ### POSIX Cross-Compiled (QEMU test execution)
 
@@ -80,13 +109,13 @@ loaded into the emulator, and the editor accepted key input.
 
 | Platform | CPU | Attestation | Screenshot |
 |---|---|---|---|
-| Commodore 64 | MOS 6502 @ 1 MHz | editor boots + key input | [screenshot-c64.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png) |
-| Atari 400/800/XL/XE | 6502C @ 1.79 MHz | editor boots + key input | [screenshot-atari8.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png) |
-| Apple IIe enhanced | 65C02 @ 1 MHz | editor boots + key input | [screenshot-apple2.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png) |
-| Amiga 68k | 68000 @ 7 MHz | editor boots + key input | [screenshot-amiga.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png) |
-| Atari ST | 68000 @ 8 MHz | editor boots + key input | [screenshot-atarist.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png) |
-| TRS-80 Model III | Z80 @ 2.03 MHz | editor boots + key input | [screenshot-trs80.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png) |
-| TI-99/4A ⚠ Experimental | TMS9900 @ 3 MHz | boot screen (ROM required) | [screenshot-ti99.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png) |
+| Commodore 64 | MOS 6502 @ 1 MHz | editor boots + key input | [screenshot-c64-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-00000000.png) |
+| Atari 400/800/XL/XE | 6502C @ 1.79 MHz | editor boots + key input | [screenshot-atari8-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-00000000.png) |
+| Apple IIe enhanced | 65C02 @ 1 MHz | editor boots + key input | [screenshot-apple2-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-00000000.png) |
+| Amiga 68k | 68000 @ 7 MHz | editor boots + key input | [screenshot-amiga-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-00000000.png) |
+| Atari ST | 68000 @ 8 MHz | editor boots + key input | [screenshot-atarist-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-00000000.png) |
+| TRS-80 Model III | Z80 @ 2.03 MHz | editor boots + key input | [screenshot-trs80-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-00000000.png) |
+| TI-99/4A ⚠ Experimental | TMS9900 @ 3 MHz | boot screen (ROM required) | [screenshot-ti99-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-00000000.png) |
 
 > All links resolve to the artifact from the **most recent push to `main`**.
 > If a screenshot link is broken, that platform's CI job failed or is still running.
@@ -410,11 +439,7 @@ make                      # auto-detects Unix host
 ./forever-text [filename] # run the editor
 ```
 
-**Latest CI screenshots** — built from commit `00000000` on `main` · [view release](https://github.com/sormondocom/forever-text/releases/tag/latest)
-
-| Linux x86-64 | macOS Apple Silicon |
-|---|---|
-| [![Linux](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux.png) | [![macOS](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos.png) |
+*Screenshots are in the [Screenshots](#screenshots) section above.*
 
 #### Quirks & notes
 
@@ -867,9 +892,7 @@ make dos16
 
 Load in DOSBox, DOSBox-X, or real DOS hardware.
 
-**Latest CI screenshot** *(updated on every push to `main`)*:
-
-[![DOS 16-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -924,9 +947,7 @@ make dos32
 
 Requires a DPMI host (CWSDPMI, HDPMI32). DOSBox bundles one automatically.
 
-**Latest CI screenshot** *(updated on every push to `main`)*:
-
-[![DOS 32-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -975,9 +996,7 @@ make c64
 
 Load with `LOAD"*",8,1` on real hardware or in VICE.
 
-**Latest CI screenshot** *(updated on every push to `main`)*:
-
-[![Commodore 64](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1027,9 +1046,7 @@ make atari8
 
 Load `ft-a8.xex` in Atari800 or on real hardware.
 
-**Latest CI screenshot** *(best-effort — uses AltirraOS or HLE mode)*:
-
-[![Atari 8-bit](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1072,9 +1089,7 @@ make apple2
 
 Load in AppleWin or linapple.
 
-**Latest CI screenshot** *(best-effort — requires Apple IIe ROM)*:
-
-[![Apple IIe](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1133,9 +1148,7 @@ make amiga
 
 Produces an AmigaOS HUNK executable. Run in FS-UAE or WinUAE.
 
-**Latest CI screenshot** *(best-effort — uses AROS free Kickstart ROM)*:
-
-[![Amiga 68k](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1185,9 +1198,7 @@ make atarist
 
 Produces a `.TOS` executable. Run in Hatari or ARAnyM.
 
-**Latest CI screenshot** *(updated on every push to `main` — uses EmuTOS free ROM)*:
-
-[![Atari ST](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1244,9 +1255,7 @@ make trs80
 
 Load `ft-80.cmd` in sdltrs or trs80gp.
 
-**Latest CI screenshot** *(best-effort — requires TRS-80 Model III ROM)*:
-
-[![TRS-80 Model III](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
@@ -1319,9 +1328,7 @@ make ti99
 
 Load in Classic99, MAME (`-cart forever-text-ti99.out`), or js99er.
 
-**Latest CI screenshot** *(best-effort — requires TI-99/4A ROM set)*:
-
-[![TI-99/4A](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99.png)
+*Screenshot: see [Screenshots](#screenshots) above.*
 
 #### Quirks & notes
 
