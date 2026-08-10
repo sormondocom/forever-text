@@ -830,6 +830,20 @@ jobs:
         if: steps.rom-cache-amiga.outputs.cache-hit != 'true'
         run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
 
+      - name: Prepare Amiga hard drive
+        # Mount a clean minimal directory as DH0: instead of the git workspace
+        # root.  Mounting the whole workspace confuses AROS (it sees .git, src,
+        # etc.) and prevented boot in earlier attempts.  A dedicated directory
+        # with only our files gives AROS a clean DH0: to boot from.
+        run: |
+          mkdir -p amiga-hd/s
+          cp forever-text-amiga amiga-hd/
+          printf 'Hello from Amiga 68k\nForever Text C89 editor\n' > amiga-hd/test.txt
+          # AmigaDOS startup-sequence: run the editor with the test file.
+          # The editor uses Input()/Output() from the Shell console; it will
+          # render directly to the AROS CLI window using ANSI escape sequences.
+          printf 'DH0:forever-text-amiga DH0:test.txt\n' > amiga-hd/s/startup-sequence
+
       - name: Configure FS-UAE
         run: |
           mkdir -p ~/.config/fs-uae
@@ -839,7 +853,8 @@ jobs:
           [config]
           amiga_model = A500
           kickstart_file = $KICK
-          hard_drive_0 = ${{ github.workspace }}
+          hard_drive_0 = ${{ github.workspace }}/amiga-hd
+          hard_drive_0_priority = 10
           EOF
 
       - name: Run FS-UAE and capture screenshot
@@ -849,19 +864,22 @@ jobs:
           export DISPLAY=:99
           fs-uae fs-uae.conf &
           FSUAE_PID=$!
-          sleep 30
-          WIN=$(xdotool search --class "fs-uae" 2>/dev/null | head -1 || \
-                xdotool search --name "FS-UAE" 2>/dev/null | head -1)
-          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          # AROS is slow to boot on CI runners; quality over speed.
+          # 90 s covers: AROS ROM init (~15 s) + system startup (~30 s) +
+          # startup-sequence execution + editor first render (~5 s).
+          sleep 90
           SHA8="${GITHUB_SHA:0:8}"
-          xdotool type --delay 150 "AMIGA ${SHA8}"
-          sleep 3
+          WIN=$(xdotool search --pid $FSUAE_PID 2>/dev/null | head -1 || \
+                xdotool search --class "fs-uae" 2>/dev/null | head -1 || \
+                xdotool search --name "FS-UAE" 2>/dev/null | head -1)
           if [ -n "$WIN" ]; then
-            import -window "$WIN" screenshot-amiga.png 2>/dev/null || scrot -u screenshot-amiga.png
+            xdotool windowfocus --sync "$WIN" 2>/dev/null || true
+            sleep 0.5
+            import -window "$WIN" "screenshot-amiga-${SHA8}.png" 2>/dev/null || \
+              scrot -u "screenshot-amiga-${SHA8}.png"
           else
-            scrot screenshot-amiga.png
+            scrot "screenshot-amiga-${SHA8}.png"
           fi
-          mv screenshot-amiga.png "screenshot-amiga-${SHA8}.png"
           kill $FSUAE_PID 2>/dev/null || true
 
       - name: Upload artifact
