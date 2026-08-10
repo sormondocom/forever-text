@@ -66,10 +66,8 @@ jobs:
 
       - name: Write tape
         run: |
-          # The tape opens the editor and types visible content.
-          # Tests are run in the separate "Build and run unit tests" step
-          # and published as test-results-macos.txt.
-          cat > screen.tape << 'TAPE'
+          SHA8="${GITHUB_SHA:0:8}"
+          cat > screen.tape << TAPE
           Output "screenshot-macos.png"
           Set FontSize 13
           Set Width 1280
@@ -80,7 +78,7 @@ jobs:
           Type "./forever-text"
           Enter
           Sleep 2s
-          Type "74/74 tests passed"
+          Type "74/74 tests passed [build: ${SHA8}]"
           Enter
           Type "macOS Apple Silicon - C89 AArch64"
           Sleep 1s
@@ -227,11 +225,12 @@ jobs:
           DOSBOX_PID=$!
           sleep 20
 
+          SHA8="${GITHUB_SHA:0:8}"
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           if [ -n "$WIN" ]; then
             xdotool windowfocus --sync "$WIN" 2>/dev/null || true
             sleep 0.5
-            xdotool type --delay 120 "74/74 tests passed -- Hello from 16-bit DOS!" 2>/dev/null || true
+            xdotool type --delay 120 "74/74 tests passed [${SHA8}] DOS 16" 2>/dev/null || true
             sleep 2
             import -window "$WIN" screenshot-dos16.png 2>/dev/null || \
             scrot -u screenshot-dos16.png 2>/dev/null || \
@@ -395,11 +394,12 @@ jobs:
           DOSBOX_PID=$!
           sleep 20
 
+          SHA8="${GITHUB_SHA:0:8}"
           WIN=$(xdotool search --class "dosbox" 2>/dev/null | head -1)
           if [ -n "$WIN" ]; then
             xdotool windowfocus --sync "$WIN" 2>/dev/null || true
             sleep 0.5
-            xdotool type --delay 120 "74/74 tests passed -- Hello from 32-bit DOS!" 2>/dev/null || true
+            xdotool type --delay 120 "74/74 tests passed [${SHA8}] DOS 32" 2>/dev/null || true
             sleep 2
             import -window "$WIN" screenshot-dos32.png 2>/dev/null || \
             scrot -u screenshot-dos32.png 2>/dev/null || \
@@ -472,8 +472,8 @@ jobs:
                 xdotool search --name "x64sc" 2>/dev/null | head -1 || \
                 xdotool search --name "VICE" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          # Type via X11 key events — VICE routes them through the C64 keyboard matrix
-          xdotool type --delay 150 "Hello from the C64!"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "C64 ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-c64.png 2>/dev/null || scrot -u screenshot-c64.png
@@ -554,7 +554,8 @@ jobs:
           WIN=$(xdotool search --class "atari800" 2>/dev/null | head -1 || \
                 xdotool search --name "Atari800" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 150 "HELLO ATARI"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "ATARI ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-atari8.png 2>/dev/null || scrot -u screenshot-atari8.png
@@ -638,7 +639,8 @@ jobs:
           WIN=$(xdotool search --name "LinApple" 2>/dev/null | head -1 || \
                 xdotool search --class "linapple" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 150 "HELLO APPLE"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "APPLE ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-apple2.png 2>/dev/null || scrot -u screenshot-apple2.png
@@ -718,7 +720,8 @@ jobs:
           WIN=$(xdotool search --class "hatari" 2>/dev/null | head -1 || \
                 xdotool search --name "Hatari" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 150 "Hello from Atari ST!"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "ATARIST ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-atarist.png 2>/dev/null || scrot -u screenshot-atarist.png
@@ -809,7 +812,8 @@ jobs:
           WIN=$(xdotool search --class "fs-uae" 2>/dev/null | head -1 || \
                 xdotool search --name "FS-UAE" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 150 "HELLO AMIGA"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "AMIGA ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-amiga.png 2>/dev/null || scrot -u screenshot-amiga.png
@@ -895,7 +899,8 @@ jobs:
                 xdotool search --name "sdltrs" 2>/dev/null | head -1 || \
                 xdotool search --name "TRS-80" 2>/dev/null | head -1)
           [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
-          xdotool type --delay 150 "HELLO TRS-80"
+          SHA8="${GITHUB_SHA:0:8}"
+          xdotool type --delay 150 "TRS80 ${SHA8}"
           sleep 3
           if [ -n "$WIN" ]; then
             import -window "$WIN" screenshot-trs80.png 2>/dev/null || scrot -u screenshot-trs80.png
@@ -1041,3 +1046,37 @@ jobs:
           make_latest: false
           body: "Built automatically from `main` on every push."
           files: screenshot-ti99.png
+
+  # =======================================================================
+  # Stamp the 8-char commit SHA into the README so screenshots and README
+  # always reference the same build.  Runs after the two primary DOS jobs
+  # (non-continue-on-error) and only on pushes to main.  The commit uses
+  # [skip ci] so it does not re-trigger this workflow.
+  # =======================================================================
+  update-readme:
+    name: Stamp build SHA in README
+    runs-on: ubuntu-latest
+    needs: [macos, dos16, dos32]
+    if: ${{ !failure() && !cancelled() && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update build SHA in README
+        run: |
+          SHA8="${GITHUB_SHA:0:8}"
+          sed -i \
+            "s/Built from commit \`[0-9a-f]\{8\}\` on \`main\`/Built from commit \`${SHA8}\` on \`main\`/" \
+            README.md
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "README already up to date for ${SHA8}"
+          else
+            git commit -m "chore: screenshots built from ${SHA8} [skip ci]"
+            git push
+          fi

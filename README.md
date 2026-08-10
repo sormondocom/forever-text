@@ -410,7 +410,7 @@ make                      # auto-detects Unix host
 ./forever-text [filename] # run the editor
 ```
 
-**Latest CI screenshots** *(updated on every push to `main`)*:
+**Latest CI screenshots** — built from commit `00000000` on `main` · [view release](https://github.com/sormondocom/forever-text/releases/tag/latest)
 
 | Linux x86-64 | macOS Apple Silicon |
 |---|---|
