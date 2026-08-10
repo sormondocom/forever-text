@@ -11,7 +11,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "../src/buffer.h"
@@ -307,7 +306,7 @@ static void test_save_load(void)
 {
     FtBuffer buf;
     FtBuffer buf2;
-    const char *tmpfile = "ft_test_tmp.txt";
+    const char *tmpfile = "ft_tmp.txt"; /* 8.3-safe: 6-char base */
     int i;
     section("save / load round-trip");
 
