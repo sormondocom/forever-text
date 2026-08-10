@@ -85,24 +85,30 @@ jobs:
           TAPE
 
       - name: Render screenshot
+        if: always()
         run: |
           vhs screen.tape
           SHA8="${GITHUB_SHA:0:8}"
           mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
 
       - name: Upload screenshot artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-macos
           path: screenshot-macos-*.png
+          if-no-files-found: warn
 
       - name: Upload test results artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-macos
           path: test-results-macos.txt
+          if-no-files-found: warn
 
       - name: Publish to rolling release
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
@@ -202,6 +208,7 @@ jobs:
           fi
 
       - name: Run editor in DOSBox and capture screenshot
+        if: always()
         run: |
           export DISPLAY=:99
           mkdir -p dostest
@@ -246,18 +253,23 @@ jobs:
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos16
           path: screenshot-dos16-*.png
+          if-no-files-found: warn
 
       - name: Upload test results artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-dos16
           path: test-results-dos16.txt
+          if-no-files-found: warn
 
       - name: Publish to rolling release
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
@@ -372,6 +384,7 @@ jobs:
           fi
 
       - name: Run editor in DOSBox and capture screenshot
+        if: always()
         run: |
           export DISPLAY=:99
           mkdir -p dostest32
@@ -416,18 +429,23 @@ jobs:
           kill $DOSBOX_PID 2>/dev/null || true
 
       - name: Upload screenshot artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-dos32
           path: screenshot-dos32-*.png
+          if-no-files-found: warn
 
       - name: Upload test results artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-dos32
           path: test-results-dos32.txt
+          if-no-files-found: warn
 
       - name: Publish to rolling release
+        if: always()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
@@ -466,21 +484,25 @@ jobs:
           Xvfb :99 -screen 0 1024x768x24 -ac &
           sleep 1
           export DISPLAY=:99
+          # Mode 0: inject-and-run; more reliable than mode 1 (BASIC RUN) for
+          # cc65-compiled PRGs that may include their own BASIC stub launcher.
           x64sc \
-            -autostartprgmode 1 \
+            -autostartprgmode 0 \
             -autostart ft-c64.prg \
             &
           C64_PID=$!
-          # C64 ROM startup + BASIC load takes ~15 s; allow 30 s for safety
-          sleep 30
-          WIN=$(xdotool search --class "x64sc" 2>/dev/null | head -1 || \
-                xdotool search --name "x64sc" 2>/dev/null | head -1 || \
-                xdotool search --name "VICE" 2>/dev/null | head -1)
-          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
+          # C64 startup + editor load: allow 40 s on slow CI runners
+          sleep 40
           SHA8="${GITHUB_SHA:0:8}"
-          xdotool type --delay 150 "C64 ${SHA8}"
-          sleep 3
+          # PID search is reliable regardless of GTK3 window class name
+          WIN=$(xdotool search --pid $C64_PID 2>/dev/null | head -1 || \
+                xdotool search --classname "x64sc" 2>/dev/null | head -1 || \
+                xdotool search --name "VICE" 2>/dev/null | head -1)
           if [ -n "$WIN" ]; then
+            xdotool windowfocus --sync "$WIN" 2>/dev/null || true
+            sleep 0.5
+            xdotool type --delay 150 "C64 ${SHA8}" 2>/dev/null || true
+            sleep 3
             import -window "$WIN" screenshot-c64.png 2>/dev/null || scrot -u screenshot-c64.png
           else
             scrot screenshot-c64.png
@@ -640,22 +662,34 @@ jobs:
           Xvfb :99 -screen 0 1024x768x24 -ac &
           sleep 1
           export DISPLAY=:99
-          linapple &
-          APPLE_PID=$!
-          sleep 25
-          WIN=$(xdotool search --name "LinApple" 2>/dev/null | head -1 || \
-                xdotool search --class "linapple" 2>/dev/null | head -1)
-          [ -n "$WIN" ] && xdotool windowfocus --sync "$WIN" && sleep 0.5
           SHA8="${GITHUB_SHA:0:8}"
-          xdotool type --delay 150 "APPLE ${SHA8}"
-          sleep 3
-          if [ -n "$WIN" ]; then
-            import -window "$WIN" screenshot-apple2.png 2>/dev/null || scrot -u screenshot-apple2.png
+          if command -v linapple 2>/dev/null; then
+            linapple &
+            APPLE_PID=$!
+            sleep 25
+            # PID search is more reliable than window class search
+            WIN=$(xdotool search --pid $APPLE_PID 2>/dev/null | head -1 || \
+                  xdotool search --name "LinApple" 2>/dev/null | head -1)
+            if [ -n "$WIN" ]; then
+              xdotool windowfocus --sync "$WIN" 2>/dev/null || true
+              sleep 0.5
+              xdotool type --delay 150 "APPLE ${SHA8}" 2>/dev/null || true
+              sleep 3
+              import -window "$WIN" screenshot-apple2.png 2>/dev/null || scrot -u screenshot-apple2.png
+            else
+              scrot screenshot-apple2.png
+            fi
+            kill $APPLE_PID 2>/dev/null || true
           else
+            # linapple not available on this runner — show build proof in a terminal
+            xterm -bg '#1a1a1a' -fg '#33ff33' -geometry 80x20+60+60 \
+              -fa 'Monospace' -fs 13 \
+              -title 'Forever Text — Apple IIe enhanced (cc65)' \
+              -e bash -c "echo 'Forever Text'; echo '--- Apple IIe enhanced (cc65 6502) ---'; echo; ls -la ft-apple2; echo; echo 'Binary compiled for Apple IIe enhanced (65C02).'; echo 'LinApple emulator not available on this runner.'; sleep 8" &
+            sleep 5
             scrot screenshot-apple2.png
           fi
           mv screenshot-apple2.png "screenshot-apple2-${SHA8}.png"
-          kill $APPLE_PID 2>/dev/null || true
 
       - name: Upload artifact
         if: always()
@@ -803,6 +837,10 @@ jobs:
           mkdir -p ~/.config/fs-uae
           ROM=$(find ci-assets/emulator-roms/amiga -name "*.rom" 2>/dev/null | head -1)
           KICK="${ROM:-:aros}"
+          # Create AmigaDOS startup-sequence so the editor runs automatically on boot.
+          # AmigaDOS reads DH0:s/startup-sequence when booting from the hard drive.
+          mkdir -p "${{ github.workspace }}/s"
+          printf 'DH0:forever-text-amiga\n' > "${{ github.workspace }}/s/startup-sequence"
           cat > fs-uae.conf << EOF
           [config]
           amiga_model = A500
