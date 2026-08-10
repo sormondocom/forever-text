@@ -83,8 +83,12 @@ jobs:
           Type "macOS Apple Silicon - C89 AArch64"
           Sleep 1s
           TAPE
-          vhs screen.tape
-          mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
+          vhs screen.tape 2>&1 || echo "::warning::VHS render exited non-zero"
+          if [ -f screenshot-macos.png ]; then
+            mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
+          else
+            echo "::error::screenshot-macos.png was not produced — VHS failed"
+          fi
 
       - name: Upload screenshot artifact
         if: always()
@@ -330,17 +334,40 @@ jobs:
         run: |
           sudo apt-get install -y dosbox xvfb scrot xdotool imagemagick
 
+      - name: Download cwsdpmi.exe (DJGPP DPMI host)
+        # build-djgpp ships only Linux host binaries; cwsdpmi.exe is a DOS
+        # executable that must be downloaded separately.  DJGPP auto-loads it
+        # from the current directory when DOSBox's internal DPMI (int 0x2F/
+        # ax=0x1687) is absent or incomplete.
+        run: |
+          CWSDPMI=$(find "$DJGPP_DIR" -iname "cwsdpmi.exe" 2>/dev/null | head -1)
+          if [ -z "$CWSDPMI" ]; then
+            echo "cwsdpmi.exe not in DJGPP package — downloading from DJGPP archive"
+            curl -sL --max-time 30 \
+              "https://de.freedif.org/pub/djgpp/current/v2misc/csdpmi7b.zip" \
+              -o /tmp/csdpmi.zip 2>/dev/null || \
+            curl -sL --max-time 30 \
+              "http://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip" \
+              -o /tmp/csdpmi.zip 2>/dev/null || true
+            if unzip -p /tmp/csdpmi.zip cwsdpmi.exe 2>/dev/null > /tmp/cwsdpmi.exe \
+               && [ -s /tmp/cwsdpmi.exe ]; then
+              CWSDPMI="/tmp/cwsdpmi.exe"
+              echo "cwsdpmi.exe downloaded successfully"
+            else
+              rm -f /tmp/cwsdpmi.exe
+              echo "::warning::cwsdpmi.exe download failed — DPMI may be unavailable"
+            fi
+          else
+            echo "cwsdpmi.exe found in DJGPP package: $CWSDPMI"
+          fi
+          echo "CWSDPMI_PATH=${CWSDPMI}" >> "$GITHUB_ENV"
+
       - name: Run unit tests in DOSBox (32-bit)
-        # DJGPP executables require a DPMI host.  DOSBox provides one internally,
-        # but some builds are incomplete.  cwsdpmi.exe (shipped with DJGPP) acts
-        # as a fallback DPMI host: DJGPP auto-loads it from the current directory
-        # when the internal DOSBox DPMI does not respond to int 0x2F/0x1687.
         run: |
           mkdir -p dostest32
           cp tb32.exe dostest32/
-          CWSDPMI=$(find "$DJGPP_DIR" -iname "cwsdpmi.exe" 2>/dev/null | head -1)
-          [ -n "$CWSDPMI" ] && cp "$CWSDPMI" dostest32/ && echo "cwsdpmi.exe staged" \
-            || echo "cwsdpmi.exe not found in DJGPP dir — DOSBox internal DPMI only"
+          [ -n "$CWSDPMI_PATH" ] && [ -f "$CWSDPMI_PATH" ] && \
+            cp "$CWSDPMI_PATH" dostest32/ && echo "cwsdpmi.exe staged" || true
           DOSTEST32="$(pwd)/dostest32"
           cat > dosbox-test32.conf << 'EOF'
           [cpu]
@@ -388,8 +415,8 @@ jobs:
           export DISPLAY=:99
           mkdir -p dostest32
           cp ft32.exe dostest32/
-          CWSDPMI=$(find "$DJGPP_DIR" -iname "cwsdpmi.exe" 2>/dev/null | head -1)
-          [ -n "$CWSDPMI" ] && cp "$CWSDPMI" dostest32/ || true
+          [ -n "$CWSDPMI_PATH" ] && [ -f "$CWSDPMI_PATH" ] && \
+            cp "$CWSDPMI_PATH" dostest32/ || true
           DOSTEST32="$(pwd)/dostest32"
           cat > dosbox32.conf << 'EOF'
           [cpu]
