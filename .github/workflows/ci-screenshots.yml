@@ -482,19 +482,24 @@ jobs:
           Xvfb :99 -screen 0 1024x768x24 -ac &
           sleep 1
           export DISPLAY=:99
-          # Mode 0: inject-and-run; more reliable than mode 1 (BASIC RUN) for
-          # cc65-compiled PRGs that may include their own BASIC stub launcher.
+          # -sound 0        : disable audio — no PulseAudio/ALSA on CI runners;
+          #                   without this VICE hangs or exits before opening its window.
+          # -autostartprgmode 1 : BASIC LOAD+RUN — cc65 PRGs load at $0801 as a BASIC
+          #                   program with a SYS stub.  Mode 0 (inject+JMP) lands on
+          #                   tokenised BASIC bytes and crashes the C64 immediately.
           x64sc \
-            -autostartprgmode 0 \
+            -sound 0 \
+            -autostartprgmode 1 \
             -autostart ft-c64.prg \
             &
           C64_PID=$!
-          # C64 startup + editor load: allow 40 s on slow CI runners
-          sleep 40
+          # C64 KERNAL boot (~2 s) + BASIC LOAD+RUN autostart (~5 s) +
+          # editor first render (~2 s) + generous margin for CI.
+          sleep 60
           SHA8="${GITHUB_SHA:0:8}"
-          # PID search is reliable regardless of GTK3 window class name
           WIN=$(xdotool search --pid $C64_PID 2>/dev/null | head -1 || \
                 xdotool search --classname "x64sc" 2>/dev/null | head -1 || \
+                xdotool search --name "x64sc" 2>/dev/null | head -1 || \
                 xdotool search --name "VICE" 2>/dev/null | head -1)
           if [ -n "$WIN" ]; then
             xdotool windowfocus --sync "$WIN" 2>/dev/null || true
