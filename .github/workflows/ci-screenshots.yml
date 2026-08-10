@@ -830,21 +830,21 @@ jobs:
         if: steps.rom-cache-amiga.outputs.cache-hit != 'true'
         run: sh .github/emulator-assets/get-roms.sh ci-assets/emulator-roms
 
-      - name: Prepare Amiga hard drive
-        # Mount a clean minimal directory as DH0: instead of the git workspace
-        # root.  Mounting the whole workspace confuses AROS (it sees .git, src,
-        # etc.) and prevented boot in earlier attempts.  A dedicated directory
-        # with only our files gives AROS a clean DH0: to boot from.
+      - name: Prepare editor binary and test file
+        # Ensure the binary has the execute bit set (required for FS-UAE's
+        # host filesystem to present it as executable to AmigaDOS) and create
+        # the test file the editor will open.  Both live at the workspace root,
+        # which FS-UAE mounts as DH0:.
         run: |
-          mkdir -p amiga-hd/s
-          cp forever-text-amiga amiga-hd/
-          printf 'Hello from Amiga 68k\nForever Text C89 editor\n' > amiga-hd/test.txt
-          # AmigaDOS startup-sequence: run the editor with the test file.
-          # The editor uses Input()/Output() from the Shell console; it will
-          # render directly to the AROS CLI window using ANSI escape sequences.
-          printf 'DH0:forever-text-amiga DH0:test.txt\n' > amiga-hd/s/startup-sequence
+          chmod +x forever-text-amiga
+          printf 'Hello from Amiga 68k\nForever Text C89 editor\nAmigaOS 68k target\n' \
+            > amiga-test.txt
 
       - name: Configure FS-UAE
+        # Mount the workspace root as DH0:.  With no s/startup-sequence present
+        # AROS opens its default Shell window — we then drive it interactively
+        # via xdotool, which we know works (the previous run proved typing into
+        # the Shell is reliable).
         run: |
           mkdir -p ~/.config/fs-uae
           ROM=$(find ci-assets/emulator-roms/amiga -name "*.rom" 2>/dev/null | head -1)
@@ -853,8 +853,7 @@ jobs:
           [config]
           amiga_model = A500
           kickstart_file = $KICK
-          hard_drive_0 = ${{ github.workspace }}/amiga-hd
-          hard_drive_0_priority = 10
+          hard_drive_0 = ${{ github.workspace }}
           EOF
 
       - name: Run FS-UAE and capture screenshot
@@ -864,10 +863,9 @@ jobs:
           export DISPLAY=:99
           fs-uae fs-uae.conf &
           FSUAE_PID=$!
-          # AROS is slow to boot on CI runners; quality over speed.
-          # 90 s covers: AROS ROM init (~15 s) + system startup (~30 s) +
-          # startup-sequence execution + editor first render (~5 s).
-          sleep 90
+          # Wait for AROS to boot and open its default Shell window.
+          # Previous runs confirmed 30 s is enough; 60 s gives headroom.
+          sleep 60
           SHA8="${GITHUB_SHA:0:8}"
           WIN=$(xdotool search --pid $FSUAE_PID 2>/dev/null | head -1 || \
                 xdotool search --class "fs-uae" 2>/dev/null | head -1 || \
@@ -875,6 +873,12 @@ jobs:
           if [ -n "$WIN" ]; then
             xdotool windowfocus --sync "$WIN" 2>/dev/null || true
             sleep 0.5
+            # Type the editor launch command into the AROS Shell and press Enter.
+            # The binary is at DH0: (workspace root); the test file likewise.
+            xdotool type --delay 150 "DH0:forever-text-amiga DH0:amiga-test.txt" 2>/dev/null || true
+            xdotool key Return 2>/dev/null || true
+            # Wait for the editor to start and paint its first frame.
+            sleep 15
             import -window "$WIN" "screenshot-amiga-${SHA8}.png" 2>/dev/null || \
               scrot -u "screenshot-amiga-${SHA8}.png"
           else
