@@ -61,11 +61,11 @@ jobs:
           ./test-buffer | tee test-results-macos.txt
           grep -q "0 failed" test-results-macos.txt
 
-      - name: Install VHS
-        run: brew install vhs
-
-      - name: Write tape
+      - name: Install VHS and render screenshot
+        if: always()
         run: |
+          brew install vhs
+          printf 'Hello Forever Text\nMacOS Apple Silicon (AArch64)\nC89 build\n' > ci_macos.txt
           SHA8="${GITHUB_SHA:0:8}"
           cat > screen.tape << TAPE
           Output "screenshot-macos.png"
@@ -75,7 +75,7 @@ jobs:
           Set Theme "Molokai"
           Set Padding 0
 
-          Type "./forever-text"
+          Type "./forever-text ci_macos.txt"
           Enter
           Sleep 2s
           Type "74/74 tests passed [build: ${SHA8}]"
@@ -83,12 +83,7 @@ jobs:
           Type "macOS Apple Silicon - C89 AArch64"
           Sleep 1s
           TAPE
-
-      - name: Render screenshot
-        if: always()
-        run: |
           vhs screen.tape
-          SHA8="${GITHUB_SHA:0:8}"
           mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
 
       - name: Upload screenshot artifact
@@ -336,12 +331,16 @@ jobs:
           sudo apt-get install -y dosbox xvfb scrot xdotool imagemagick
 
       - name: Run unit tests in DOSBox (32-bit)
-        # DJGPP executables are 32-bit protected mode; DOSBox provides the
-        # DPMI host automatically.  The test binary uses only stdio, so
-        # stdout redirection to RESULTS.TXT works via DOSBox's DOS shell.
+        # DJGPP executables require a DPMI host.  DOSBox provides one internally,
+        # but some builds are incomplete.  cwsdpmi.exe (shipped with DJGPP) acts
+        # as a fallback DPMI host: DJGPP auto-loads it from the current directory
+        # when the internal DOSBox DPMI does not respond to int 0x2F/0x1687.
         run: |
           mkdir -p dostest32
           cp tb32.exe dostest32/
+          CWSDPMI=$(find "$DJGPP_DIR" -iname "cwsdpmi.exe" 2>/dev/null | head -1)
+          [ -n "$CWSDPMI" ] && cp "$CWSDPMI" dostest32/ && echo "cwsdpmi.exe staged" \
+            || echo "cwsdpmi.exe not found in DJGPP dir — DOSBox internal DPMI only"
           DOSTEST32="$(pwd)/dostest32"
           cat > dosbox-test32.conf << 'EOF'
           [cpu]
@@ -389,6 +388,8 @@ jobs:
           export DISPLAY=:99
           mkdir -p dostest32
           cp ft32.exe dostest32/
+          CWSDPMI=$(find "$DJGPP_DIR" -iname "cwsdpmi.exe" 2>/dev/null | head -1)
+          [ -n "$CWSDPMI" ] && cp "$CWSDPMI" dostest32/ || true
           DOSTEST32="$(pwd)/dostest32"
           cat > dosbox32.conf << 'EOF'
           [cpu]
@@ -837,10 +838,6 @@ jobs:
           mkdir -p ~/.config/fs-uae
           ROM=$(find ci-assets/emulator-roms/amiga -name "*.rom" 2>/dev/null | head -1)
           KICK="${ROM:-:aros}"
-          # Create AmigaDOS startup-sequence so the editor runs automatically on boot.
-          # AmigaDOS reads DH0:s/startup-sequence when booting from the hard drive.
-          mkdir -p "${{ github.workspace }}/s"
-          printf 'DH0:forever-text-amiga\n' > "${{ github.workspace }}/s/startup-sequence"
           cat > fs-uae.conf << EOF
           [config]
           amiga_model = A500
