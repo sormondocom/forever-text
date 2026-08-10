@@ -1070,7 +1070,7 @@ jobs:
     name: Stamp build SHA in README
     runs-on: ubuntu-latest
     needs: [macos, dos16, dos32]
-    if: ${{ !failure() && !cancelled() && github.ref == 'refs/heads/main' }}
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
     steps:

@@ -18,8 +18,6 @@ minicomputers through modern silicon.
 
 ## Build Status
 
-Each target family has its own pipeline so failures are immediately visible.
-
 | Pipeline | Status |
 |---|---|
 | Native Linux (x86-64) + feature proof | [![Native](https://github.com/sormondocom/forever-text/actions/workflows/ci-native.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-native.yml) |
@@ -31,13 +29,9 @@ Each target family has its own pipeline so failures are immediately visible.
 | Amiga 68k (amiga-gcc) | [![Amiga](https://github.com/sormondocom/forever-text/actions/workflows/ci-amiga.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-amiga.yml) |
 | Atari ST MiNT (m68k-atari-mint-gcc) | [![Atari ST](https://github.com/sormondocom/forever-text/actions/workflows/ci-atarist.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-atarist.yml) |
 | TRS-80 Model III Z80 (SDCC) | [![TRS-80](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml) |
-| TI-99/4A TMS9900 (Experimental) | [![TI-99](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml) |
+| TI-99/4A TMS9900 (Experimental ⚠) | [![TI-99](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml) |
 
-> **TI-99/4A** is marked experimental — `gcc-tms9900` builds from source in CI
-> and has no stable prebuilt release.  Its badge may be red without blocking
-> other pipelines.
-
-> **Latest screenshots:** built from commit `00000000` on `main` · [view release →](https://github.com/sormondocom/forever-text/releases/tag/latest)
+**Latest build on `main`:** commit `00000000` · [view release →](https://github.com/sormondocom/forever-text/releases/tag/latest)
 
 ---
 
@@ -78,12 +72,12 @@ step only runs after the test step succeeds.
 
 ### Desktop, Server, and DOS
 
-| Platform | Architecture | Tests | Results | Screenshot |
-|---|---|---|---|---|
-| Linux x86-64 | x86-64 | 74/74 — native | [test-results-linux.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-linux.txt) | [screenshot-linux-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-00000000.png) |
-| macOS Apple Silicon | AArch64 | 74/74 — native | [test-results-macos.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-macos.txt) | [screenshot-macos-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-00000000.png) |
-| DOS 16-bit real mode | 8086 | 74/74 — in DOSBox | [test-results-dos16.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos16.txt) | [screenshot-dos16-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-00000000.png) |
-| DOS 32-bit protected mode | 386 | 74/74 — in DOSBox | [test-results-dos32.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos32.txt) | [screenshot-dos32-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-00000000.png) |
+| Platform | Architecture | Tests | Results |
+|---|---|---|---|
+| Linux x86-64 | x86-64 | 74/74 — native | [test-results-linux.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-linux.txt) |
+| macOS Apple Silicon | AArch64 | 74/74 — native | [test-results-macos.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-macos.txt) |
+| DOS 16-bit real mode | 8086 | 74/74 — in DOSBox | [test-results-dos16.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos16.txt) |
+| DOS 32-bit protected mode | 386 | 74/74 — in DOSBox | [test-results-dos32.txt](https://github.com/sormondocom/forever-text/releases/download/latest/test-results-dos32.txt) |
 
 ### POSIX Cross-Compiled (QEMU test execution)
 
@@ -107,18 +101,17 @@ Unit tests exceed available RAM on these platforms (≤ 38 KB usable on 6502
 targets).  The screenshot is the attestation — it proves the binary compiled,
 loaded into the emulator, and the editor accepted key input.
 
-| Platform | CPU | Attestation | Screenshot |
-|---|---|---|---|
-| Commodore 64 | MOS 6502 @ 1 MHz | editor boots + key input | [screenshot-c64-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-00000000.png) |
-| Atari 400/800/XL/XE | 6502C @ 1.79 MHz | editor boots + key input | [screenshot-atari8-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-00000000.png) |
-| Apple IIe enhanced | 65C02 @ 1 MHz | editor boots + key input | [screenshot-apple2-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-00000000.png) |
-| Amiga 68k | 68000 @ 7 MHz | editor boots + key input | [screenshot-amiga-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-00000000.png) |
-| Atari ST | 68000 @ 8 MHz | editor boots + key input | [screenshot-atarist-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-00000000.png) |
-| TRS-80 Model III | Z80 @ 2.03 MHz | editor boots + key input | [screenshot-trs80-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-00000000.png) |
-| TI-99/4A ⚠ Experimental | TMS9900 @ 3 MHz | boot screen (ROM required) | [screenshot-ti99-00000000.png](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-00000000.png) |
+| Platform | CPU | Attestation |
+|---|---|---|
+| Commodore 64 | MOS 6502 @ 1 MHz | editor boots + key input |
+| Atari 400/800/XL/XE | 6502C @ 1.79 MHz | editor boots + key input |
+| Apple IIe enhanced | 65C02 @ 1 MHz | editor boots + key input |
+| Amiga 68k | 68000 @ 7 MHz | editor boots + key input |
+| Atari ST | 68000 @ 8 MHz | editor boots + key input |
+| TRS-80 Model III | Z80 @ 2.03 MHz | editor boots + key input |
+| TI-99/4A ⚠ Experimental | TMS9900 @ 3 MHz | boot screen (ROM required) |
 
-> All links resolve to the artifact from the **most recent push to `main`**.
-> If a screenshot link is broken, that platform's CI job failed or is still running.
+*Screenshots are in the [Screenshots](#screenshots) section.*
 
 ---
 
