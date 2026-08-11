@@ -66,12 +66,11 @@ jobs:
         run: |
           brew install vhs
           SHA8="${GITHUB_SHA:0:8}"
-          # Set WorkDir so VHS's shell starts in the workspace and can find
-          # ./forever-text.  Without this VHS starts in $HOME and the binary
-          # is not found, producing a shell error instead of the editor.
-          # Dracula is a built-in VHS theme; "Molokai" does not exist in VHS.
+          # Output must be .gif — VHS 0.11.0 silently produces nothing for
+          # .png output.  ffmpeg (installed as a VHS dependency) extracts
+          # the final frame as the PNG screenshot.
           cat > screen.tape << TAPE
-          Output "screenshot-macos.png"
+          Output "screen.gif"
           Set FontSize 14
           Set Width 1280
           Set Height 800
@@ -86,13 +85,19 @@ jobs:
           Type "C89 build - commit ${SHA8}"
           Enter
           Type "74/74 unit tests passed"
-          Sleep 1s
+          Sleep 2s
           TAPE
           vhs screen.tape
-          if [ -f screenshot-macos.png ]; then
-            mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
+          # Decompose every GIF frame to a numbered PNG, then keep the last
+          # one (the fully-rendered editor after all typing completes).
+          ffmpeg -i screen.gif -vsync 0 frame_%04d.png 2>/dev/null
+          LAST_FRAME=$(ls frame_*.png 2>/dev/null | sort | tail -1)
+          if [ -n "$LAST_FRAME" ]; then
+            mv "$LAST_FRAME" "screenshot-macos-${SHA8}.png"
+            rm -f frame_*.png
           else
-            echo "::error::VHS did not produce screenshot-macos.png"
+            echo "::error::ffmpeg could not extract frames from VHS GIF"
+            ls -la screen.gif 2>/dev/null || echo "screen.gif not found either"
             exit 1
           fi
 
