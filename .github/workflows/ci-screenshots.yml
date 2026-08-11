@@ -65,29 +65,36 @@ jobs:
         if: always()
         run: |
           brew install vhs
-          printf 'Hello Forever Text\nMacOS Apple Silicon (AArch64)\nC89 build\n' > ci_macos.txt
           SHA8="${GITHUB_SHA:0:8}"
+          # Set WorkDir so VHS's shell starts in the workspace and can find
+          # ./forever-text.  Without this VHS starts in $HOME and the binary
+          # is not found, producing a shell error instead of the editor.
+          # Dracula is a built-in VHS theme; "Molokai" does not exist in VHS.
           cat > screen.tape << TAPE
           Output "screenshot-macos.png"
-          Set FontSize 13
+          Set FontSize 14
           Set Width 1280
-          Set Height 720
-          Set Theme "Molokai"
-          Set Padding 0
+          Set Height 800
+          Set Theme "Dracula"
+          Set Padding 20
+          Set WorkDir "${{ github.workspace }}"
 
-          Type "./forever-text ci_macos.txt"
+          Type "./forever-text"
           Enter
-          Sleep 2s
-          Type "74/74 tests passed [build: ${SHA8}]"
+          Sleep 3s
+          Type "Forever Text - macOS Apple Silicon (AArch64)"
           Enter
-          Type "macOS Apple Silicon - C89 AArch64"
+          Type "C89 build - commit ${SHA8}"
+          Enter
+          Type "74/74 unit tests passed"
           Sleep 1s
           TAPE
-          vhs screen.tape 2>&1 || echo "::warning::VHS render exited non-zero"
+          vhs screen.tape
           if [ -f screenshot-macos.png ]; then
             mv screenshot-macos.png "screenshot-macos-${SHA8}.png"
           else
-            echo "::error::screenshot-macos.png was not produced — VHS failed"
+            echo "::error::VHS did not produce screenshot-macos.png"
+            exit 1
           fi
 
       - name: Upload screenshot artifact
