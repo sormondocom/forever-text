@@ -31,7 +31,7 @@ minicomputers through modern silicon.
 | TRS-80 Model III Z80 (SDCC) | [![TRS-80](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-trs80.yml) |
 | TI-99/4A TMS9900 (Experimental ⚠) | [![TI-99](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml/badge.svg)](https://github.com/sormondocom/forever-text/actions/workflows/ci-ti99.yml) |
 
-**Latest build on `main`:** commit `770c658b` · [view release →](https://github.com/sormondocom/forever-text/releases/tag/latest)
+**Latest build on `main`:** commit `a38cf02e` · [view release →](https://github.com/sormondocom/forever-text/releases/tag/latest)
 
 ---
 
@@ -44,21 +44,21 @@ The 8-character commit hash visible inside each image matches the hash above.
 
 | Linux x86-64 | macOS Apple Silicon |
 |---|---|
-| [![Linux](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-770c658b.png) | [![macOS](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-770c658b.png) |
+| [![Linux](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-linux-a38cf02e.png) | [![macOS](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-macos-a38cf02e.png) |
 
 | DOS 16-bit real mode | DOS 32-bit protected mode |
 |---|---|
-| [![DOS 16](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-770c658b.png) | [![DOS 32](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-770c658b.png) |
+| [![DOS 16](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos16-a38cf02e.png) | [![DOS 32](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-dos32-a38cf02e.png) |
 
 ### 8-bit and Vintage
 
 | Commodore 64 | Atari 400/800/XL/XE | Apple IIe enhanced |
 |---|---|---|
-| [![C64](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-770c658b.png) | [![Atari 8](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-770c658b.png) | [![Apple IIe](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-770c658b.png) |
+| [![C64](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-c64-a38cf02e.png) | [![Atari 8](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atari8-a38cf02e.png) | [![Apple IIe](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-apple2-a38cf02e.png) |
 
 | Amiga 68k | Atari ST | TRS-80 Model III | TI-99/4A |
 |---|---|---|---|
-| [![Amiga](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-770c658b.png) | [![Atari ST](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-770c658b.png) | [![TRS-80](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-770c658b.png) | [![TI-99/4A](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-770c658b.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-770c658b.png) |
+| [![Amiga](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-amiga-a38cf02e.png) | [![Atari ST](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-atarist-a38cf02e.png) | [![TRS-80](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-trs80-a38cf02e.png) | [![TI-99/4A](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-a38cf02e.png)](https://github.com/sormondocom/forever-text/releases/download/latest/screenshot-ti99-a38cf02e.png) |
 
 ---
 
