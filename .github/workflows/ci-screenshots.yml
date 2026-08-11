@@ -77,9 +77,8 @@ jobs:
           Set Height 800
           Set Theme "Dracula"
           Set Padding 20
-          Set WorkDir "${{ github.workspace }}"
 
-          Type "./forever-text"
+          Type "cd ${{ github.workspace }} && ./forever-text"
           Enter
           Sleep 3s
           Type "Forever Text - macOS Apple Silicon (AArch64)"
