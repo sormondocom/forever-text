@@ -223,6 +223,46 @@ void platform_attr_normal(void)
     bios_attr = 0x07; /* light grey on black */
 }
 
+void platform_cursor_hide(void)
+{
+#if defined(__WATCOMC__) || defined(__TURBOC__) || defined(_MSC_VER)
+    union REGS r;
+    r.h.ah = 0x01;
+    r.h.ch = 0x20; /* bit 5 of CH set = cursor not visible */
+    r.h.cl = 0x00;
+    int86(0x10, &r, &r);
+#elif defined(__ia16__) || defined(__IA16__)
+    __asm__ __volatile__(
+        "int $0x10"
+        :
+        : "a"((uint16_t)0x0100), "c"((uint16_t)0x2000)
+        : "cc"
+    );
+#else
+    (void)0;
+#endif
+}
+
+void platform_cursor_show(void)
+{
+#if defined(__WATCOMC__) || defined(__TURBOC__) || defined(_MSC_VER)
+    union REGS r;
+    r.h.ah = 0x01;
+    r.h.ch = 0x06; /* normal blinking cursor scan lines 6-7 */
+    r.h.cl = 0x07;
+    int86(0x10, &r, &r);
+#elif defined(__ia16__) || defined(__IA16__)
+    __asm__ __volatile__(
+        "int $0x10"
+        :
+        : "a"((uint16_t)0x0100), "c"((uint16_t)0x0607)
+        : "cc"
+    );
+#else
+    (void)0;
+#endif
+}
+
 void platform_flush(void)
 {
     int i;

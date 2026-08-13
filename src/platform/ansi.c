@@ -122,8 +122,6 @@ void platform_init(void)
 #ifdef FT_POSIX
     posix_enable_raw();
 #endif
-    /* Hide cursor during drawing to avoid flicker */
-    fputs("\033[?25l", stdout);
     platform_clear_screen();
     platform_flush();
 }
@@ -236,6 +234,18 @@ void platform_attr_normal(void)
 
 void platform_flush(void)
 {
+    fflush(stdout);
+}
+
+void platform_cursor_hide(void)
+{
+    fputs("\033[?25l", stdout);
+    fflush(stdout);
+}
+
+void platform_cursor_show(void)
+{
+    fputs("\033[?25h", stdout);
     fflush(stdout);
 }
 

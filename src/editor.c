@@ -476,6 +476,7 @@ static void draw_screen(FtEditor *ed)
     int screen_cursor_col;
 
     clamp_cursor(ed);
+    platform_cursor_hide();
 
     /* Re-query size in case the terminal was resized */
     platform_get_size(&ed->screen_rows, &ed->screen_cols);
@@ -511,6 +512,7 @@ static void draw_screen(FtEditor *ed)
 
     platform_move(screen_cursor_row, screen_cursor_col);
     platform_flush();
+    platform_cursor_show();
 }
 
 /* ------------------------------------------------------------------ */

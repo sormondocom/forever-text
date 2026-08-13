@@ -229,6 +229,9 @@ void platform_flush(void)
     show_cursor();
 }
 
+void platform_cursor_hide(void) {}
+void platform_cursor_show(void) {}
+
 /* ------------------------------------------------------------------ */
 /* Keyboard input                                                        */
 /*                                                                      */

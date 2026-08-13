@@ -1,20 +1,19 @@
 /*
  * win32.c - Windows Console API platform implementation for Forever Text
  *
- * Uses the Win32 Console API directly for:
- *   - Raw key input (ReadConsoleInput)
- *   - Cursor positioning (SetConsoleCursorPosition)
- *   - Reverse video (SetConsoleTextAttribute)
- *   - Screen size (GetConsoleScreenBufferInfo)
+ * Uses WriteConsoleOutput to render each frame atomically:
+ *   - All draw calls (platform_move, platform_putch, platform_attr_*, etc.)
+ *     write into a CHAR_INFO back-buffer in memory — zero Win32 calls.
+ *   - platform_flush() sends the entire buffer to the console in one
+ *     WriteConsoleOutput call, so no row-by-row scan is visible.
+ *   - SetConsoleCursorPosition positions the hardware cursor afterwards.
+ *   - platform_cursor_hide/show bracket each frame via SetConsoleCursorInfo.
  *
- * This works on Windows XP and later without requiring ANSI/VT sequences.
- * For Windows 10 1511+ you could alternatively enable VT processing and
- * use ansi.c, but this implementation is the broadest Win32 target.
+ * Works on Windows XP and later without ANSI/VT sequences.
  */
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <stdio.h>
 
 #include "platform.h"
 
@@ -27,47 +26,33 @@ static HANDLE ft_hin  = INVALID_HANDLE_VALUE;
 static DWORD  ft_orig_out_mode;
 static DWORD  ft_orig_in_mode;
 static WORD   ft_orig_attrs;
-
-/* Current attribute word (foreground + background) */
-static WORD   ft_normal_attr;
-static WORD   ft_reverse_attr;
+static DWORD  ft_orig_cursor_size;
 
 /* ------------------------------------------------------------------ */
-/* Output buffer                                                         */
+/* Attribute words                                                       */
 /* ------------------------------------------------------------------ */
 
-#define OUT_BUF_SIZE 65536
-static char  ft_out_buf[OUT_BUF_SIZE];
-static int   ft_out_pos;
+static WORD ft_normal_attr;   /* white on black */
+static WORD ft_reverse_attr;  /* black on white */
+static WORD ft_cur_attr;      /* attribute applied to the next write */
 
-static void buf_flush(void)
-{
-    DWORD written;
-    if (ft_out_pos > 0 && ft_hout != INVALID_HANDLE_VALUE) {
-        WriteConsoleA(ft_hout, ft_out_buf, (DWORD)ft_out_pos, &written, NULL);
-        ft_out_pos = 0;
-    }
-}
+/* ------------------------------------------------------------------ */
+/* CHAR_INFO back-buffer                                                 */
+/*                                                                      */
+/* All draw operations write here.  platform_flush() sends the whole   */
+/* buffer to the console in a single WriteConsoleOutput call.           */
+/* MAX_SCREEN_COLS x MAX_SCREEN_ROWS covers any practical console size. */
+/* ------------------------------------------------------------------ */
 
-static void buf_putch(char c)
-{
-    if (ft_out_pos >= OUT_BUF_SIZE)
-        buf_flush();
-    ft_out_buf[ft_out_pos++] = c;
-}
+#define MAX_SCREEN_COLS 220
+#define MAX_SCREEN_ROWS 70
 
-static void buf_puts(const char *s)
-{
-    while (*s)
-        buf_putch(*s++);
-}
+static CHAR_INFO ft_screen_buf[MAX_SCREEN_ROWS * MAX_SCREEN_COLS];
 
-static void buf_putn(const char *s, int n)
-{
-    int i;
-    for (i = 0; i < n; i++)
-        buf_putch(s[i]);
-}
+static int ft_cur_row    = 0;
+static int ft_cur_col    = 0;
+static int ft_screen_rows = 25;  /* updated by platform_get_size */
+static int ft_screen_cols = 80;
 
 /* ------------------------------------------------------------------ */
 /* Public platform API                                                   */
@@ -76,6 +61,7 @@ static void buf_putn(const char *s, int n)
 void platform_init(void)
 {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
+    CONSOLE_CURSOR_INFO cci;
 
     ft_hout = GetStdHandle(STD_OUTPUT_HANDLE);
     ft_hin  = GetStdHandle(STD_INPUT_HANDLE);
@@ -83,23 +69,30 @@ void platform_init(void)
     GetConsoleMode(ft_hout, &ft_orig_out_mode);
     GetConsoleMode(ft_hin,  &ft_orig_in_mode);
 
-    /* Disable processed output so we control everything */
+    /* Disable processed output so we control all rendering */
     SetConsoleMode(ft_hout, 0);
 
-    /* Raw input: no line buffering, no echo, pass all keys through */
-    SetConsoleMode(ft_hin,
-        ENABLE_WINDOW_INPUT); /* catch resize events too */
+    /* Raw input: no line buffering, no echo; catch resize events */
+    SetConsoleMode(ft_hin, ENABLE_WINDOW_INPUT);
 
-    /* Remember the original text attributes for restore */
     GetConsoleScreenBufferInfo(ft_hout, &csbi);
     ft_orig_attrs = csbi.wAttributes;
 
     /* Normal = white on black, reverse = black on white */
     ft_normal_attr  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
     ft_reverse_attr = BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE;
+    ft_cur_attr     = ft_normal_attr;
 
-    SetConsoleTextAttribute(ft_hout, ft_normal_attr);
-    ft_out_pos = 0;
+    /* Save original cursor size so platform_cursor_show can restore it */
+    if (GetConsoleCursorInfo(ft_hout, &cci))
+        ft_orig_cursor_size = cci.dwSize;
+    else
+        ft_orig_cursor_size = 25;
+
+    ft_cur_row     = 0;
+    ft_cur_col     = 0;
+    ft_screen_rows = 25;
+    ft_screen_cols = 80;
 
     platform_clear_screen();
     platform_flush();
@@ -107,8 +100,7 @@ void platform_init(void)
 
 void platform_shutdown(void)
 {
-    /* Restore original console modes and attributes */
-    buf_flush();
+    platform_cursor_show();
     SetConsoleTextAttribute(ft_hout, ft_orig_attrs);
     SetConsoleMode(ft_hout, ft_orig_out_mode);
     SetConsoleMode(ft_hin,  ft_orig_in_mode);
@@ -118,97 +110,144 @@ void platform_get_size(int *rows, int *cols)
 {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (GetConsoleScreenBufferInfo(ft_hout, &csbi)) {
-        *cols = (int)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
-        *rows = (int)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
+        ft_screen_cols = (int)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
+        ft_screen_rows = (int)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
+        if (ft_screen_cols > MAX_SCREEN_COLS) ft_screen_cols = MAX_SCREEN_COLS;
+        if (ft_screen_rows > MAX_SCREEN_ROWS) ft_screen_rows = MAX_SCREEN_ROWS;
+        *cols = ft_screen_cols;
+        *rows = ft_screen_rows;
     } else {
+        ft_screen_rows = 25;
+        ft_screen_cols = 80;
         *rows = 25;
         *cols = 80;
     }
 }
 
+/*
+ * platform_move: record the logical cursor position for subsequent putch
+ * calls.  No Win32 call is made here; SetConsoleCursorPosition happens
+ * once in platform_flush after the full buffer is written.
+ */
 void platform_move(int row, int col)
 {
-    COORD pos;
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    int   top;
-
-    buf_flush(); /* SetConsoleCursorPosition needs a clean buffer state */
-
-    GetConsoleScreenBufferInfo(ft_hout, &csbi);
-    top = (int)csbi.srWindow.Top;
-
-    pos.X = (SHORT)col;
-    pos.Y = (SHORT)(top + row);
-    SetConsoleCursorPosition(ft_hout, pos);
+    ft_cur_row = row;
+    ft_cur_col = col;
 }
 
 void platform_putch(int c)
 {
-    buf_putch((char)c);
+    int idx;
+    if (ft_cur_row < 0 || ft_cur_row >= MAX_SCREEN_ROWS) return;
+    if (ft_cur_col < 0 || ft_cur_col >= MAX_SCREEN_COLS) return;
+    idx = ft_cur_row * MAX_SCREEN_COLS + ft_cur_col;
+    ft_screen_buf[idx].Char.AsciiChar = (char)c;
+    ft_screen_buf[idx].Attributes     = ft_cur_attr;
+    ft_cur_col++;
 }
 
 void platform_puts(const char *s)
 {
-    buf_puts(s);
+    while (*s)
+        platform_putch((unsigned char)*s++);
 }
 
 void platform_putn(const char *s, int n)
 {
-    buf_putn(s, n);
+    int i;
+    for (i = 0; i < n; i++)
+        platform_putch((unsigned char)s[i]);
 }
 
+/*
+ * platform_clear_eol: fill the rest of the current row with spaces up to
+ * the actual screen width (ft_screen_cols, updated by platform_get_size).
+ */
 void platform_clear_eol(void)
 {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    COORD   pos;
-    DWORD   written;
-    int     cols_left;
-
-    buf_flush();
-    GetConsoleScreenBufferInfo(ft_hout, &csbi);
-    pos       = csbi.dwCursorPosition;
-    cols_left = (int)csbi.srWindow.Right - (int)pos.X + 1;
-
-    if (cols_left > 0) {
-        FillConsoleOutputCharacterA(ft_hout, ' ', (DWORD)cols_left, pos, &written);
-        FillConsoleOutputAttribute(ft_hout, csbi.wAttributes,
-                                   (DWORD)cols_left, pos, &written);
+    int col;
+    int idx;
+    if (ft_cur_row < 0 || ft_cur_row >= MAX_SCREEN_ROWS) return;
+    for (col = ft_cur_col; col < ft_screen_cols; col++) {
+        idx = ft_cur_row * MAX_SCREEN_COLS + col;
+        ft_screen_buf[idx].Char.AsciiChar = ' ';
+        ft_screen_buf[idx].Attributes     = ft_cur_attr;
     }
 }
 
 void platform_clear_screen(void)
 {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    COORD   home;
-    DWORD   cells, written;
-
-    buf_flush();
-    GetConsoleScreenBufferInfo(ft_hout, &csbi);
-    home.X = csbi.srWindow.Left;
-    home.Y = csbi.srWindow.Top;
-    cells  = (DWORD)((csbi.srWindow.Right  - csbi.srWindow.Left + 1) *
-                     (csbi.srWindow.Bottom - csbi.srWindow.Top  + 1));
-
-    FillConsoleOutputCharacterA(ft_hout, ' ', cells, home, &written);
-    FillConsoleOutputAttribute(ft_hout, ft_normal_attr, cells, home, &written);
-    SetConsoleCursorPosition(ft_hout, home);
+    int r;
+    int c;
+    int idx;
+    for (r = 0; r < ft_screen_rows; r++) {
+        for (c = 0; c < ft_screen_cols; c++) {
+            idx = r * MAX_SCREEN_COLS + c;
+            ft_screen_buf[idx].Char.AsciiChar = ' ';
+            ft_screen_buf[idx].Attributes     = ft_normal_attr;
+        }
+    }
+    ft_cur_row = 0;
+    ft_cur_col = 0;
 }
 
-void platform_attr_reverse(void)
-{
-    buf_flush();
-    SetConsoleTextAttribute(ft_hout, ft_reverse_attr);
-}
+/* Attribute changes are instant buffer state — no Win32 call needed */
+void platform_attr_reverse(void) { ft_cur_attr = ft_reverse_attr; }
+void platform_attr_normal(void)  { ft_cur_attr = ft_normal_attr;  }
 
-void platform_attr_normal(void)
-{
-    buf_flush();
-    SetConsoleTextAttribute(ft_hout, ft_normal_attr);
-}
-
+/*
+ * platform_flush: send the entire CHAR_INFO buffer to the console in one
+ * atomic WriteConsoleOutput call, then position the hardware cursor.
+ * Called once per frame after all draw functions have run.
+ */
 void platform_flush(void)
 {
-    buf_flush();
+    COORD buf_size;
+    COORD buf_origin;
+    SMALL_RECT write_rect;
+    COORD cursor_pos;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    int top;
+
+    if (ft_hout == INVALID_HANDLE_VALUE) return;
+
+    GetConsoleScreenBufferInfo(ft_hout, &csbi);
+    top = (int)csbi.srWindow.Top;
+
+    /* Buffer layout: MAX_SCREEN_COLS wide, ft_screen_rows tall */
+    buf_size.X   = (SHORT)MAX_SCREEN_COLS;
+    buf_size.Y   = (SHORT)ft_screen_rows;
+    buf_origin.X = 0;
+    buf_origin.Y = 0;
+
+    /* Destination rectangle: the visible console window */
+    write_rect.Left   = csbi.srWindow.Left;
+    write_rect.Top    = (SHORT)top;
+    write_rect.Right  = (SHORT)(csbi.srWindow.Left + ft_screen_cols - 1);
+    write_rect.Bottom = (SHORT)(top + ft_screen_rows - 1);
+
+    WriteConsoleOutput(ft_hout, ft_screen_buf, buf_size, buf_origin, &write_rect);
+
+    /* Place the hardware cursor at the position set by the last platform_move */
+    cursor_pos.X = (SHORT)ft_cur_col;
+    cursor_pos.Y = (SHORT)(top + ft_cur_row);
+    SetConsoleCursorPosition(ft_hout, cursor_pos);
+}
+
+void platform_cursor_hide(void)
+{
+    CONSOLE_CURSOR_INFO cci;
+    cci.dwSize   = 1;
+    cci.bVisible = FALSE;
+    SetConsoleCursorInfo(ft_hout, &cci);
+}
+
+void platform_cursor_show(void)
+{
+    CONSOLE_CURSOR_INFO cci;
+    cci.dwSize   = (DWORD)ft_orig_cursor_size;
+    cci.bVisible = TRUE;
+    SetConsoleCursorInfo(ft_hout, &cci);
 }
 
 /* ------------------------------------------------------------------ */
@@ -231,7 +270,7 @@ int platform_read_key(void)
         /* Ignore everything except key-down events */
         if (ir.EventType != KEY_EVENT) continue;
         ke = &ir.Event.KeyEvent;
-        if (!ke->bKeyDown)  continue;
+        if (!ke->bKeyDown) continue;
 
         vk    = ke->wVirtualKeyCode;
         ctrl  = ke->dwControlKeyState;

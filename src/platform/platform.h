@@ -46,6 +46,12 @@ void platform_attr_normal(void);
 /* Flush all buffered output to the terminal */
 void platform_flush(void);
 
+/* Hide the hardware cursor (call at the start of each frame) */
+void platform_cursor_hide(void);
+
+/* Show the hardware cursor (call after platform_flush each frame) */
+void platform_cursor_show(void);
+
 /*
  * Block until a key is pressed and return a KEY_* constant below.
  * Printable ASCII characters are returned as their ASCII value.

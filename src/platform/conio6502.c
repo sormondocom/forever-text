@@ -254,6 +254,9 @@ void platform_flush(void)
     buf_flush_6502();
 }
 
+void platform_cursor_hide(void) {}
+void platform_cursor_show(void) {}
+
 /* ------------------------------------------------------------------ */
 /* Keyboard input                                                        */
 /* ------------------------------------------------------------------ */

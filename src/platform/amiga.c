@@ -89,10 +89,6 @@ void platform_init(void)
 
     /* Switch console to raw mode: no line buffering, no echo */
     SetMode(ft_in, 1);
-
-    /* Hide cursor during drawing */
-    ft_puts("\033[?25l");
-    Flush(ft_out);
 }
 
 void platform_shutdown(void)
@@ -186,6 +182,18 @@ void platform_attr_normal(void)
 
 void platform_flush(void)
 {
+    Flush(ft_out);
+}
+
+void platform_cursor_hide(void)
+{
+    ft_puts("\033[?25l");
+    Flush(ft_out);
+}
+
+void platform_cursor_show(void)
+{
+    ft_puts("\033[?25h");
     Flush(ft_out);
 }
 
