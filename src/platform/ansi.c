@@ -7,6 +7,13 @@
  *   - DOS with ANSI.SYS loaded (uses conio.h for raw input)
  *   - Any system presenting a VT100-compatible terminal
  *
+ * Rendering uses a staging + display cell buffer (Option B):
+ *   - Draw calls (platform_move, platform_putch, etc.) write to ft_staging.
+ *   - platform_flush() diffs ft_staging against ft_display and emits only
+ *     changed cells as minimal escape sequences, then copies staging->display.
+ *   - This minimises bytes sent to the terminal, which matters most on slow
+ *     serial links (e.g. VT100 at 9600 baud).
+ *
  * Compile-time detection:
  *   MSDOS / __MSDOS__ / _MSDOS   -> DOS path (conio.h, no termios)
  *   Otherwise                    -> POSIX path (termios, sys/ioctl)
@@ -94,7 +101,7 @@ static void esc(const char *seq)
     fputs(seq, stdout);
 }
 
-/* Simple integer-to-string for building escape sequences without sprintf */
+/* Integer-to-terminal helper — avoids sprintf for C89 portability */
 static void write_int(int n)
 {
     char buf[16];
@@ -114,6 +121,30 @@ static void write_int(int n)
 }
 
 /* ------------------------------------------------------------------ */
+/* Cell staging and display buffers                                      */
+/*                                                                      */
+/* ft_staging: the frame we are currently building (draw calls land here)
+ * ft_display: what is currently rendered on the physical terminal      */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+    char          c;    /* character to display                         */
+    unsigned char attr; /* 0 = normal, 1 = reverse video               */
+} FtCell;
+
+#define FT_ANSI_MAX_ROWS 70
+#define FT_ANSI_MAX_COLS 220
+
+static FtCell        ft_staging[FT_ANSI_MAX_ROWS * FT_ANSI_MAX_COLS];
+static FtCell        ft_display[FT_ANSI_MAX_ROWS * FT_ANSI_MAX_COLS];
+static int           ft_scr_rows  = 24;
+static int           ft_scr_cols  = 80;
+static int           ft_cur_row   = 0;   /* logical cursor (set by platform_move) */
+static int           ft_cur_col   = 0;
+static unsigned char ft_cur_attr  = 0;   /* 0=normal, 1=reverse */
+static int           ft_dirty_all = 0;   /* 1 = skip diff, redraw everything */
+
+/* ------------------------------------------------------------------ */
 /* Public platform API                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -122,17 +153,18 @@ void platform_init(void)
 #ifdef FT_POSIX
     posix_enable_raw();
 #endif
+    fputs("\033[0m", stdout); /* reset any lingering attributes */
+    fflush(stdout);
     platform_clear_screen();
     platform_flush();
 }
 
 void platform_shutdown(void)
 {
-    /* Show cursor, move to a clean bottom position */
-    fputs("\033[?25h", stdout);
-    esc("0m");           /* reset all attributes */
+    /* Reset attrs and ensure cursor is visible before returning to shell */
+    fputs("\033[0m\033[?25h", stdout);
     fputc('\n', stdout);
-    platform_flush();
+    fflush(stdout);
 #ifdef FT_POSIX
     posix_disable_raw();
 #endif
@@ -140,100 +172,207 @@ void platform_shutdown(void)
 
 void platform_get_size(int *rows, int *cols)
 {
+    int new_rows;
+    int new_cols;
+
 #ifdef FT_POSIX
-    struct winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 &&
-        ws.ws_row > 0 && ws.ws_col > 0) {
-        *rows = (int)ws.ws_row;
-        *cols = (int)ws.ws_col;
-        return;
-    }
-    /* Fallback: move to far corner and query cursor position */
     {
-        int r = 24, c = 80;
-        char buf[32];
-        int  i = 0;
-        int  ch;
-
-        fputs("\033[999;999H\033[6n", stdout);
-        fflush(stdout);
-
-        /* Read ESC [ rows ; cols R */
-        while (i < (int)(sizeof(buf) - 1)) {
-            ch = posix_read_byte();
-            if (ch < 0) break;
-            buf[i++] = (char)ch;
-            if (ch == 'R') break;
-        }
-        buf[i] = '\0';
-
-        if (sscanf(buf, "\033[%d;%dR", &r, &c) == 2) {
-            *rows = r;
-            *cols = c;
+        struct winsize ws;
+        new_rows = 24;
+        new_cols = 80;
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 &&
+            ws.ws_row > 0 && ws.ws_col > 0) {
+            new_rows = (int)ws.ws_row;
+            new_cols = (int)ws.ws_col;
         } else {
-            *rows = 24;
-            *cols = 80;
+            /*
+             * Fallback: move cursor to far corner, query position via DSR.
+             * These writes go directly to stdout outside the staging model;
+             * the next platform_flush restores the correct screen state.
+             */
+            char buf[32];
+            int  i = 0;
+            int  ch;
+            fputs("\033[999;999H\033[6n", stdout);
+            fflush(stdout);
+            while (i < (int)(sizeof(buf) - 1)) {
+                ch = posix_read_byte();
+                if (ch < 0) break;
+                buf[i++] = (char)ch;
+                if (ch == 'R') break;
+            }
+            buf[i] = '\0';
+            if (sscanf(buf, "\033[%d;%dR", &new_rows, &new_cols) != 2) {
+                new_rows = 24;
+                new_cols = 80;
+            }
         }
     }
 #elif defined(FT_DOS)
-    /* Standard DOS text mode is 80x25; query BIOS for actual mode */
-    *rows = 25;
-    *cols = 80;
+    new_rows = 25;
+    new_cols = 80;
 #else
-    *rows = 24;
-    *cols = 80;
+    new_rows = 24;
+    new_cols = 80;
 #endif
+
+    if (new_rows > FT_ANSI_MAX_ROWS) new_rows = FT_ANSI_MAX_ROWS;
+    if (new_cols > FT_ANSI_MAX_COLS) new_cols = FT_ANSI_MAX_COLS;
+    if (new_rows < 1) new_rows = 1;
+    if (new_cols < 1) new_cols = 1;
+
+    /* Force a full redraw if the terminal was resized */
+    if (new_rows != ft_scr_rows || new_cols != ft_scr_cols)
+        ft_dirty_all = 1;
+
+    ft_scr_rows = new_rows;
+    ft_scr_cols = new_cols;
+    *rows = ft_scr_rows;
+    *cols = ft_scr_cols;
 }
 
+/* Record logical cursor position; no output until platform_flush */
 void platform_move(int row, int col)
 {
-    /* ANSI uses 1-based coordinates */
-    fputc('\033', stdout);
-    fputc('[',   stdout);
-    write_int(row + 1);
-    fputc(';',   stdout);
-    write_int(col + 1);
-    fputc('H',   stdout);
+    ft_cur_row = row;
+    ft_cur_col = col;
 }
 
 void platform_putch(int c)
 {
-    fputc(c, stdout);
+    int idx;
+    if (ft_cur_row < 0 || ft_cur_row >= FT_ANSI_MAX_ROWS) return;
+    if (ft_cur_col < 0 || ft_cur_col >= FT_ANSI_MAX_COLS) return;
+    idx = ft_cur_row * FT_ANSI_MAX_COLS + ft_cur_col;
+    ft_staging[idx].c    = (char)c;
+    ft_staging[idx].attr = ft_cur_attr;
+    ft_cur_col++;
 }
 
 void platform_puts(const char *s)
 {
-    fputs(s, stdout);
+    while (*s)
+        platform_putch((unsigned char)*s++);
 }
 
 void platform_putn(const char *s, int n)
 {
-    fwrite(s, 1, (size_t)n, stdout);
+    int i;
+    for (i = 0; i < n; i++)
+        platform_putch((unsigned char)s[i]);
 }
 
+/* Fill the remainder of the current row in staging with spaces */
 void platform_clear_eol(void)
 {
-    esc("K");
+    int col;
+    int idx;
+    if (ft_cur_row < 0 || ft_cur_row >= FT_ANSI_MAX_ROWS) return;
+    for (col = ft_cur_col; col < ft_scr_cols; col++) {
+        if (col >= FT_ANSI_MAX_COLS) break;
+        idx = ft_cur_row * FT_ANSI_MAX_COLS + col;
+        ft_staging[idx].c    = ' ';
+        ft_staging[idx].attr = ft_cur_attr;
+    }
 }
 
+/* Fill entire staging buffer with spaces and mark for full redraw */
 void platform_clear_screen(void)
 {
-    esc("2J");
-    esc("H");
+    int r;
+    int c;
+    int idx;
+    for (r = 0; r < FT_ANSI_MAX_ROWS; r++) {
+        for (c = 0; c < FT_ANSI_MAX_COLS; c++) {
+            idx = r * FT_ANSI_MAX_COLS + c;
+            ft_staging[idx].c    = ' ';
+            ft_staging[idx].attr = 0;
+        }
+    }
+    ft_cur_row   = 0;
+    ft_cur_col   = 0;
+    ft_dirty_all = 1;
 }
 
-void platform_attr_reverse(void)
-{
-    esc("7m");
-}
+void platform_attr_reverse(void) { ft_cur_attr = 1; }
+void platform_attr_normal(void)  { ft_cur_attr = 0; }
 
-void platform_attr_normal(void)
-{
-    esc("0m");
-}
-
+/*
+ * platform_flush: diff ft_staging against ft_display; emit only changed
+ * cells as minimal ANSI escape sequences; copy staging->display; then
+ * position the hardware cursor at the location set by platform_move.
+ *
+ * Consecutive changed cells within the same row are emitted as a run —
+ * one move sequence at the start, then characters without re-positioning
+ * as the terminal cursor advances automatically after each character.
+ */
 void platform_flush(void)
 {
+    int     row;
+    int     col;
+    int     idx;
+    int     dirty_all;
+    int     hw_row;     /* terminal cursor's current row  */
+    int     hw_col;     /* terminal cursor's current col  */
+    int     hw_attr;    /* attribute active in terminal (-1 = unknown) */
+    FtCell *s;
+    FtCell *d;
+
+    dirty_all = ft_dirty_all;
+    ft_dirty_all = 0;
+
+    hw_row  = -1;
+    hw_col  = -1;
+    hw_attr = -1;
+
+    for (row = 0; row < ft_scr_rows; row++) {
+        for (col = 0; col < ft_scr_cols; col++) {
+            idx = row * FT_ANSI_MAX_COLS + col;
+            s   = &ft_staging[idx];
+            d   = &ft_display[idx];
+
+            if (!dirty_all && s->c == d->c && s->attr == d->attr)
+                continue;
+
+            /* Move cursor only when it is not already at this cell */
+            if (row != hw_row || col != hw_col) {
+                fputc('\033', stdout);
+                fputc('[',    stdout);
+                write_int(row + 1);
+                fputc(';',    stdout);
+                write_int(col + 1);
+                fputc('H',    stdout);
+                hw_row = row;
+                hw_col = col;
+            }
+
+            /* Change attribute only when it differs from current */
+            if ((int)s->attr != hw_attr) {
+                if (s->attr)
+                    esc("7m");
+                else
+                    esc("0m");
+                hw_attr = (int)s->attr;
+            }
+
+            fputc(s->c, stdout);
+            hw_col++;  /* terminal cursor advances one column after each char */
+            *d = *s;
+        }
+    }
+
+    /* If we left the terminal in reverse video, reset to normal */
+    if (hw_attr == 1)
+        esc("0m");
+
+    /* Position hardware cursor at the logical cursor location */
+    fputc('\033', stdout);
+    fputc('[',    stdout);
+    write_int(ft_cur_row + 1);
+    fputc(';',    stdout);
+    write_int(ft_cur_col + 1);
+    fputc('H',    stdout);
+
     fflush(stdout);
 }
 

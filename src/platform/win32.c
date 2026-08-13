@@ -14,6 +14,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <string.h>
 
 #include "platform.h"
 
@@ -47,7 +48,8 @@ static WORD ft_cur_attr;      /* attribute applied to the next write */
 #define MAX_SCREEN_COLS 220
 #define MAX_SCREEN_ROWS 70
 
-static CHAR_INFO ft_screen_buf[MAX_SCREEN_ROWS * MAX_SCREEN_COLS];
+static CHAR_INFO ft_screen_buf[MAX_SCREEN_ROWS * MAX_SCREEN_COLS]; /* staging */
+static CHAR_INFO ft_prev_buf[MAX_SCREEN_ROWS * MAX_SCREEN_COLS];   /* last flushed */
 
 static int ft_cur_row    = 0;
 static int ft_cur_col    = 0;
@@ -226,9 +228,13 @@ void platform_flush(void)
     write_rect.Right  = (SHORT)(csbi.srWindow.Left + ft_screen_cols - 1);
     write_rect.Bottom = (SHORT)(top + ft_screen_rows - 1);
 
-    WriteConsoleOutput(ft_hout, ft_screen_buf, buf_size, buf_origin, &write_rect);
+    /* Only call WriteConsoleOutput when content has changed */
+    if (memcmp(ft_screen_buf, ft_prev_buf, sizeof(ft_screen_buf)) != 0) {
+        WriteConsoleOutput(ft_hout, ft_screen_buf, buf_size, buf_origin, &write_rect);
+        memcpy(ft_prev_buf, ft_screen_buf, sizeof(ft_prev_buf));
+    }
 
-    /* Place the hardware cursor at the position set by the last platform_move */
+    /* Always update hardware cursor position */
     cursor_pos.X = (SHORT)ft_cur_col;
     cursor_pos.Y = (SHORT)(top + ft_cur_row);
     SetConsoleCursorPosition(ft_hout, cursor_pos);
