@@ -22,6 +22,8 @@
 static void clamp_cursor(FtEditor *ed)
 {
     int line_len;
+    int min_col;
+    int max_col;
 
     if (ed->cursor_row < 0)
         ed->cursor_row = 0;
@@ -29,10 +31,11 @@ static void clamp_cursor(FtEditor *ed)
         ed->cursor_row = ed->buf.num_lines - 1;
 
     line_len = ed->buf.lines[ed->cursor_row].len;
-    if (ed->cursor_col < 0)
-        ed->cursor_col = 0;
-    if (ed->cursor_col > line_len)
-        ed->cursor_col = line_len;
+    min_col  = ed->indent_left;               /* 0 when no border */
+    max_col  = line_len > min_col ? line_len : min_col;
+
+    if (ed->cursor_col < min_col) ed->cursor_col = min_col;
+    if (ed->cursor_col > max_col) ed->cursor_col = max_col;
 }
 
 static void scroll_to_cursor(FtEditor *ed)
@@ -471,6 +474,8 @@ static void draw_screen(FtEditor *ed)
 {
     int screen_cursor_row;
     int screen_cursor_col;
+
+    clamp_cursor(ed);
 
     /* Re-query size in case the terminal was resized */
     platform_get_size(&ed->screen_rows, &ed->screen_cols);
@@ -1018,7 +1023,7 @@ static void process_key(FtEditor *ed, int key)
                 ed->cursor_col++;
             } else if (ed->cursor_row < ed->buf.num_lines - 1) {
                 ed->cursor_row++;
-                ed->cursor_col = 0;
+                ed->cursor_col = ed->indent_left;
             }
             break;
 
@@ -1066,18 +1071,19 @@ static void process_key(FtEditor *ed, int key)
             break;
 
         case KEY_BACKSPACE:
-            if (ed->cursor_col > 0) {
-                if (ed->indent_left == 0 || ed->cursor_col > ed->indent_left) {
+            {
+                int min_col = ed->indent_left;
+                if (ed->cursor_col > min_col) {
                     ed->cursor_col--;
                     ft_buffer_delete_char(&ed->buf, ed->cursor_row, ed->cursor_col);
                     ed->dirty = 1;
+                } else if (ed->cursor_row > 0) {
+                    int prev_len = ed->buf.lines[ed->cursor_row - 1].len;
+                    ft_buffer_join_lines(&ed->buf, ed->cursor_row - 1);
+                    ed->cursor_row--;
+                    ed->cursor_col = prev_len;
+                    ed->dirty = 1;
                 }
-            } else if (ed->cursor_row > 0 && ed->indent_left == 0) {
-                int prev_len = ed->buf.lines[ed->cursor_row - 1].len;
-                ft_buffer_join_lines(&ed->buf, ed->cursor_row - 1);
-                ed->cursor_row--;
-                ed->cursor_col = prev_len;
-                ed->dirty = 1;
             }
             break;
 
@@ -1157,13 +1163,14 @@ static void process_key(FtEditor *ed, int key)
         default:
             /* Printable character: insert at cursor */
             if (key >= 32 && key < 127) {
-                /* On an empty line with a left border, advance to the border first */
-                if (ed->indent_left > 0
-                        && ed->buf.lines[ed->cursor_row].len == 0) {
+                /* If the cursor is past the line end (e.g. hovering at the
+                 * left border on a line shorter than indent_left), pad with
+                 * spaces so the insert position is always valid.           */
+                {
+                    int cur_len = ed->buf.lines[ed->cursor_row].len;
                     int pad;
-                    for (pad = 0; pad < ed->indent_left; pad++)
+                    for (pad = cur_len; pad < ed->cursor_col; pad++)
                         ft_buffer_insert_char(&ed->buf, ed->cursor_row, pad, ' ');
-                    ed->cursor_col = ed->indent_left;
                 }
                 ft_buffer_insert_char(&ed->buf, ed->cursor_row,
                                       ed->cursor_col, (char)key);
